@@ -1,0 +1,29 @@
+{
+  "name": "Poshan Pro",
+  "short_name": "PoshanPro",
+  "description": "Secure Digital Family Registry for Household Management.",
+  "start_url": "/?v=2",
+  "scope": "/",
+  "display": "fullscreen",
+  "orientation": "portrait-primary",
+  "background_color": "#4338ca",
+  "theme_color": "#4338ca",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3063/3063822.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3063/3063822.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  }
+}
