@@ -6,9 +6,12 @@
   "scope": "/",
   "display": "fullscreen",
   "orientation": "portrait-primary",
-  "background_color": "#4338ca",
-  "theme_color": "#4338ca",
-  "categories": ["productivity", "utilities"],
+  "background_color": "#7638ca",
+  "theme_color": "#8038ca",
+  "categories": [
+    "productivity",
+    "utilities"
+  ],
   "icons": [
     {
       "src": "https://cdn-icons-png.flaticon.com/512/3063/3063822.png",
