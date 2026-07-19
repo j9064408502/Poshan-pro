@@ -234,14 +234,14 @@
                 }
             };
 
-            // MODIFICATION: Stats array properly loading target assets/ local files mapped to prompt specification
+            // FIX: Absolute slash added to image paths mapping for accurate static bundle loads
             const stats = useMemo(() => [
-                { l: 'Families', v: members.filter(x => x.isFamilyHead).length, c: 'bg-amber-500', img: 'assets/p.png', bc: 'border-amber-600/20' },
-                { l: 'Members', v: members.length, c: 'bg-indigo-200', img: 'assets/fa.png', bc: 'border-indigo-300/30' },
-                { l: 'Female', v: members.filter(x => x.gender === 'Female').length, c: 'bg-rose-200', img: 'assets/f.png', bc: 'border-rose-300/30' },
-                { l: 'Male', v: members.filter(x => x.gender === 'Male').length, c: 'bg-sky-200', img: 'assets/m.png', bc: 'border-sky-300/30' },
-                { l: 'Girl', v: members.filter(x => x.gender === 'Girl').length, c: 'bg-pink-200', img: 'assets/g.png', bc: 'border-pink-300/30' },
-                { l: 'Boy', v: members.filter(x => x.gender === 'Boy').length, c: 'bg-cyan-200', img: 'assets/b.png', bc: 'border-cyan-300/30' }
+                { l: 'Families', v: members.filter(x => x.isFamilyHead).length, c: 'bg-amber-500', img: '/assets/p.png', bc: 'border-amber-600/20' },
+                { l: 'Members', v: members.length, c: 'bg-indigo-200', img: '/assets/fa.png', bc: 'border-indigo-300/30' },
+                { l: 'Female', v: members.filter(x => x.gender === 'Female').length, c: 'bg-rose-200', img: '/assets/f.png', bc: 'border-rose-300/30' },
+                { l: 'Male', v: members.filter(x => x.gender === 'Male').length, c: 'bg-sky-200', img: '/assets/m.png', bc: 'border-sky-300/30' },
+                { l: 'Girl', v: members.filter(x => x.gender === 'Girl').length, c: 'bg-pink-200', img: '/assets/g.png', bc: 'border-pink-300/30' },
+                { l: 'Boy', v: members.filter(x => x.gender === 'Boy').length, c: 'bg-cyan-200', img: '/assets/b.png', bc: 'border-cyan-300/30' }
             ], [members]);
 
             const ageDisplay = useMemo(() => {
@@ -384,8 +384,9 @@
                 </div>
             );
 
+            // FIX: "cloudcannon-editable" hooks added to the main layouts for visual DOM editor synchronization
             return (
-                <div className="min-h-screen pb-20 bg-gradient-to-b from-[#f43f5e] to-[#e11d48] animate-view">
+                <div className="min-h-screen pb-20 bg-gradient-to-b from-[#f43f5e] to-[#e11d48] animate-view cloudcannon-editable">
                     <nav className="sticky top-0 bg-indigo-700 text-white p-4 flex items-center justify-between shadow-xl z-[60]">
                         <div className="flex items-center gap-3">
                             {view !== 'dashboard' && <button onClick={() => {
@@ -433,7 +434,7 @@
                                         <div className="flex items-center gap-3 h-full">
                                             {/* Grandpa asset/h.png perfectly placed on left with contrast blending */}
                                             <div className="h-full w-[65px] flex items-end justify-center">
-                                                <img src="assets/h.png" alt="Grandpa Full" className="h-full w-full object-contain object-bottom blend-multiply" />
+                                                <img src="/assets/h.png" alt="Grandpa Full" className="h-full w-full object-contain object-bottom blend-multiply" />
                                             </div>
                                             
                                             {/* Re-arranged Headline Labels stacked text */}
@@ -538,7 +539,7 @@
                                         </div>
                                     ))}
                                     <button onClick={() => setView('selectRelation')} className="w-full border-4 border-dashed border-slate-200 p-12 rounded-[48px] flex flex-col items-center text-slate-300 gap-3 bg-white/50 active:bg-slate-100 shadow-inner transition-all leading-none">
-                                        <div className="bg-slate-50 p-4 rounded-full border shadow-sm"><Icons.Plus s={32} /></div>
+                                        <div className="slate-50 p-4 rounded-full border shadow-sm"><Icons.Plus s={32} /></div>
                                         <span className="text-[11px] font-black uppercase italic tracking-widest opacity-60">Add Member to Household</span>
                                     </button>
                                 </div>
@@ -583,8 +584,8 @@
 
                                 <div className="bg-white p-6 rounded-[40px] border-b-8 border-slate-200 shadow-md space-y-5">
                                     <div className="grid grid-cols-2 gap-4">
-                                        <div><CompactLabel>First Name</CompactLabel><input className="w-full p-4 border-2 border-slate-100 rounded-2xl font-bold italic outline-none focus:border-indigo-300 transition-all shadow-sm font-bold uppercase" value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} /></div>
-                                        <div><CompactLabel>Last Name</CompactLabel><input className="w-full p-4 border-2 border-slate-100 rounded-2xl font-bold italic outline-none focus:border-indigo-300 transition-all shadow-sm font-bold uppercase" value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} /></div>
+                                        <div><CompactLabel>First Name</CompactLabel><input className="w-full p-4 border-2 border-slate-100 rounded-2xl font-bold italic outline-none focus:border-indigo-300 transition-all shadow-sm uppercase" value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} /></div>
+                                        <div><CompactLabel>Last Name</CompactLabel><input className="w-full p-4 border-2 border-slate-100 rounded-2xl font-bold italic outline-none focus:border-indigo-300 transition-all shadow-sm uppercase" value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} /></div>
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4">
@@ -613,7 +614,7 @@
                                         </div>
                                         <div className="relative leading-none">
                                             <CompactLabel>Birth Date</CompactLabel>
-                                            <input placeholder="DD/MM/YYYY" className="w-full p-4 border-2 border-slate-100 rounded-2xl font-bold shadow-sm outline-none font-bold" value={formData.birthDate} onChange={e => {
+                                            <input placeholder="DD/MM/YYYY" className="w-full p-4 border-2 border-slate-100 rounded-2xl font-bold shadow-sm outline-none" value={formData.birthDate} onChange={e => {
                                                     let val = e.target.value.replace(/\D/g, ''); let len = val.length;
                                                     if (len >= 2) { let dd = parseInt(val.slice(0, 2)); if (dd > 31 || dd === 0) return; }
                                                     if (len >= 4) { let mm = parseInt(val.slice(2, 4)); if (mm > 12 || mm === 0) return; }
@@ -630,19 +631,19 @@
                                         <div className="relative">
                                             <CompactLabel required={false}>Mobile</CompactLabel>
                                             <div className="relative flex items-center">
-                                                <input className="w-full p-4 pr-12 border-2 border-slate-100 rounded-2xl font-bold outline-none shadow-sm font-bold" value={formData.mobile} onChange={e => setFormData({...formData, mobile: e.target.value.replace(/\D/g,'')})} maxLength={10} inputMode="tel" />
+                                                <input className="w-full p-4 pr-12 border-2 border-slate-100 rounded-2xl font-bold outline-none shadow-sm" value={formData.mobile} onChange={e => setFormData({...formData, mobile: e.target.value.replace(/\D/g,'')})} maxLength={10} inputMode="tel" />
                                                 {formData.mobile.length === 10 && ( <div className="absolute right-4 animate-view"><Icons.CheckCircle /></div> )}
                                             </div>
                                         </div>
                                         <div className="relative">
                                             <CompactLabel required={false}>Aadhaar</CompactLabel>
                                             <div className="relative flex items-center">
-                                                <input className="w-full p-4 pr-12 border-2 border-slate-100 rounded-2xl font-bold outline-none shadow-sm font-bold" value={formData.aadhaar} onChange={e => setFormData({...formData, aadhaar: e.target.value.replace(/\D/g,'')})} maxLength={12} inputMode="numeric" />
+                                                <input className="w-full p-4 pr-12 border-2 border-slate-100 rounded-2xl font-bold outline-none shadow-sm" value={formData.aadhaar} onChange={e => setFormData({...formData, aadhaar: e.target.value.replace(/\D/g,'')})} maxLength={12} inputMode="numeric" />
                                                 {formData.aadhaar.length === 12 && ( <div className="absolute right-4 animate-view"><Icons.CheckCircle /></div> )}
                                             </div>
                                         </div>
                                     </div>
-                                    <button onClick={handleSave} disabled={isSaving} className="w-full py-6 bg-indigo-700 text-white rounded-[32px] font-black italic text-2xl shadow-2xl active:scale-95 border-b-8 border-indigo-900 mt-6 shadow-indigo-100 uppercase tracking-tighter transition-all font-black leading-none">{isSaving ? "SYNCING..." : "SAVE & SYNC"}</button>
+                                    <button onClick={handleSave} disabled={isSaving} className="w-full py-6 bg-indigo-700 text-white rounded-[32px] font-black italic text-2xl shadow-2xl active:scale-95 border-b-8 border-indigo-900 mt-6 shadow-indigo-100 uppercase tracking-tighter transition-all leading-none">{isSaving ? "SYNCING..." : "SAVE & SYNC"}</button>
                                 </div>
                             </div>
                         )}
