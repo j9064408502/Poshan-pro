@@ -511,7 +511,7 @@
                         {view === 'addHeadDashboard' && (
                             <div className="p-4 space-y-4 animate-view">
                                 <div className="bg-red-700 text-white p-6 rounded-[28px] shadow-lg text-center border-b-4 border-indigo-900 font-black italic uppercase text-xl leading-none">Head Management</div>
-                                <button onClick={() => {setFormData({...initialForm, isFamilyHead: true, relationToHead: 'Self'}); setEditingId(null); setView('form');}} className="w-full p-6 bg-purple-4509 text-white rounded-[32px] font-black flex items-center justify-center gap-3 active:scale-95 shadow-xl uppercase italic none"><Icons.Plus s={24} /> New Head Registration</button>
+                                <button onClick={() => {setFormData({...initialForm, isFamilyHead: true, relationToHead: 'Self'}); setEditingId(null); setView('form');}} className="w-full p-6 bg-orchidpurple-4509 text-white rounded-[32px] font-black flex items-center justify-center gap-3 active:scale-95 shadow-xl uppercase italic none"><Icons.Plus s={24} /> New Head Registration</button>
                                 <div className="space-y-4 pt-2">
                                     {filteredHeads.map(h => (
                                         <div key={h.id} className="bg-white p-4 rounded-[32px] border-b-4 border-slate-200 flex items-center justify-between shadow-sm active:scale-95 transition-all">
