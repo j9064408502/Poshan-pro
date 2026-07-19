@@ -1,0 +1,16 @@
+dir:
+  source: /
+  output: dist
+
+_select_data:
+  ssg: static
+
+paths:
+  uploads: assets
+  dam_uploads: assets
+
+collections_config:
+  pages:
+    path: /
+    output: true
+    url: /[slug].html
