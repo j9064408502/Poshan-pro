@@ -1,16 +1,27 @@
-dir:
-  source: /
-  output: dist
-
-_select_data:
-  ssg: static
-
 paths:
   uploads: assets
   dam_uploads: assets
-
 collections_config:
   pages:
     path: /
-    output: true
+    icon: notes
     url: /[slug].html
+    disable_url: false
+    preview:
+      text:
+      subtext:
+      icon:
+      icon_color:
+      icon_background_color:
+      image:
+      metadata:
+      gallery:
+    disable_add: false
+    disable_add_folder: false
+    disable_file_actions: false
+_select_data:
+  ssg: static
+timezone: Etc/UTC
+dir:
+  source: /
+  output: dist
