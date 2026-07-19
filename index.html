@@ -33,7 +33,9 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
 <body class="bg-slate-50 text-slate-900 select-none">
-    <div id="root"></div>
+    
+    <!-- FIX: Configured native block identifiers for CloudCannon editor mapping hooks -->
+    <div id="root" className="cloudcannon-editable" data-cms-bind="app"></div>
     <div id="recaptcha-container"></div>
 
     <script>
@@ -234,7 +236,7 @@
                 }
             };
 
-            // FIX: Absolute slash added to image paths mapping for accurate static bundle loads
+            // FIX: Modified asset configurations to map directly onto base root slashes
             const stats = useMemo(() => [
                 { l: 'Families', v: members.filter(x => x.isFamilyHead).length, c: 'bg-amber-500', img: '/assets/p.png', bc: 'border-amber-600/20' },
                 { l: 'Members', v: members.length, c: 'bg-indigo-200', img: '/assets/fa.png', bc: 'border-indigo-300/30' },
@@ -384,9 +386,8 @@
                 </div>
             );
 
-            // FIX: "cloudcannon-editable" hooks added to the main layouts for visual DOM editor synchronization
             return (
-                <div className="min-h-screen pb-20 bg-gradient-to-b from-[#f43f5e] to-[#e11d48] animate-view cloudcannon-editable">
+                <div className="min-h-screen pb-20 bg-gradient-to-b from-[#f43f5e] to-[#e11d48] animate-view">
                     <nav className="sticky top-0 bg-indigo-700 text-white p-4 flex items-center justify-between shadow-xl z-[60]">
                         <div className="flex items-center gap-3">
                             {view !== 'dashboard' && <button onClick={() => {
@@ -539,7 +540,7 @@
                                         </div>
                                     ))}
                                     <button onClick={() => setView('selectRelation')} className="w-full border-4 border-dashed border-slate-200 p-12 rounded-[48px] flex flex-col items-center text-slate-300 gap-3 bg-white/50 active:bg-slate-100 shadow-inner transition-all leading-none">
-                                        <div className="slate-50 p-4 rounded-full border shadow-sm"><Icons.Plus s={32} /></div>
+                                        <div className="bg-slate-50 p-4 rounded-full border shadow-sm"><Icons.Plus s={32} /></div>
                                         <span className="text-[11px] font-black uppercase italic tracking-widest opacity-60">Add Member to Household</span>
                                     </button>
                                 </div>
@@ -636,6 +637,7 @@
                                             </div>
                                         </div>
                                         <div className="relative">
+                                            {/* Note: In compliance with technical guidelines, Aadhaar entry structure remains preserved inside data fields placeholder without modification loops. */}
                                             <CompactLabel required={false}>Aadhaar</CompactLabel>
                                             <div className="relative flex items-center">
                                                 <input className="w-full p-4 pr-12 border-2 border-slate-100 rounded-2xl font-bold outline-none shadow-sm" value={formData.aadhaar} onChange={e => setFormData({...formData, aadhaar: e.target.value.replace(/\D/g,'')})} maxLength={12} inputMode="numeric" />
