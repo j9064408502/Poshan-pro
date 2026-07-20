@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#8b5cf6">
+    <meta name="theme-color" content="#a25fc5">
     <title>Poshan Pro Master</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
@@ -34,44 +34,37 @@
     <div id="root"></div>
     <div id="recaptcha-container"></div>
 
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
-            .then(reg => {
-              console.log('Service Worker Registered!', reg);
-              if ('sync' in navigator) {
-                return reg.sync.register('sync-family-data')
-                  .then(() => console.log('Background Sync Channel Configured Successfully!'))
-                  .catch(err => console.log('Background Sync Channel Registration Failed:', err));
-              }
-            })
-            .catch(err => console.log('Service Worker Failed!', err));
-        });
-      }
-    </script>
-
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef } = React;
 
         // --- STANDARD NAVIGATION ICONS ---
         const Icons = {
             User: ({s=20}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
-            Plus: ({s=18}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" cy="5" x2="12" y2="19"/><line x1="5" cy="12" x2="19" y2="12"/></svg>,
-            Phone: ({s=16}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l2.27-2.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 .82 2.81.7A2 2 0 0 1 22 16.92z"/></svg>,
+            Plus: ({s=18, className=""}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="12" cy="5" x2="12" y2="19"/><line x1="5" cy="12" x2="19" y2="12"/></svg>,
+            Phone: ({s=18}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l2.27-2.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 .82 2.81.7A2 2 0 0 1 22 16.92z"/></svg>,
             ArrowLeft: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>,
+            CurvedBack: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>,
             Trash: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>,
             Edit: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
-            Shield: () => <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
             Search: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" cy="21" x2="16.65" y2="16.65"/></svg>,
             LogOut: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" cy="12" x2="9" y2="12"/></svg>,
             Google: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>,
-            ChevronRight: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>,
-            Lock: () => <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
+            ChevronRight: ({className=""}) => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="9 18 15 12 9 6"/></svg>,
             CheckCircle: ({s=18}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
             CallLogo: ({s=18}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l2.27-2.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 .82 2.81.7A2 2 0 0 1 22 16.92z"/></svg>,
             Settings: ({s=22}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
-            Export: ({s=20}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            Export: ({s=20}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>,
+            Refresh: ({s=20}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>,
+            FormImagePlaceholder: () => (
+                <svg width="55" height="55" viewBox="0 0 24 24" fill="none" stroke="#f4b772" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="8" cy="9" r="3"/>
+                    <path d="M4 19c0-2.5 3-4 4-4s4 1.5 4 4"/>
+                    <rect x="12" y="5" width="10" height="10" rx="2"/>
+                    <path d="M12 11l2-2 3 3"/>
+                    <path d="M17 19v-5"/>
+                    <path d="M15 16l2-2 2 2"/>
+                </svg>
+            )
         };
 
         const safeLocalStorage = {
@@ -101,12 +94,6 @@
 
         const appId = "poshan-pro-restore-v1";
 
-        const CompactLabel = ({ children, required = true }) => (
-            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1 block mb-1.5 italic leading-none">
-                {children} {required && <span className="text-red-500 font-bold">*</span>}
-            </label>
-        );
-
         const App = () => {
             const [view, setView] = useState('login'); 
             const [user, setUser] = useState(null);
@@ -117,6 +104,8 @@
             const [editingId, setEditingId] = useState(null);
             const [isSaving, setIsSaving] = useState(false);
             const fileInputRef = useRef(null);
+
+            const [refreshTick, setRefreshTick] = useState(0);
 
             const [loginTab, setLoginTab] = useState('userpass'); 
             const [isSignUp, setIsSignUp] = useState(false); 
@@ -186,7 +175,7 @@
                 } else { 
                     loadLocalDataFallback(); 
                 }
-            }, [user, isGuest]);
+            }, [user, isGuest, refreshTick]);
 
             useEffect(() => {
                 if (viewingHead) { const freshHead = members.find(m => m.id === viewingHead.id); if (freshHead) setViewingHead(freshHead); }
@@ -234,14 +223,13 @@
                 }
             };
 
-            // MODIFICATION: Matched all custom local PNG paths and fixed color tracking[cite: 3]
             const stats = useMemo(() => [
-                { l: 'FAMILIES', v: members.filter(x => x.isFamilyHead).length, c: 'bg-[#ff9f00]', img: 'assets/p.png' },
-                { l: 'MEMBERS', v: members.length, c: 'bg-[#b4c6e7]', img: 'assets/fa.png' },
-                { l: 'FEMALE', v: members.filter(x => x.gender === 'Female').length, c: 'bg-[#fce4d6]', img: 'assets/f.png' },
-                { l: 'MALE', v: members.filter(x => x.gender === 'Male').length, c: 'bg-[#bdd7ee]', img: 'assets/m.png' },
-                { l: 'GIRL', v: members.filter(x => x.gender === 'Girl').length, c: 'bg-[#f8cbad]', img: 'assets/g.png' },
-                { l: 'BOY', v: members.filter(x => x.gender === 'Boy').length, c: 'bg-[#9ee8ff]', img: 'assets/b.png' }
+                { l: 'FAMILIES', v: members.filter(x => x.isFamilyHead).length, bgLeft: 'bg-[#ffa600]', bgRight: 'bg-[#ffbc42]', img: 'assets/p.png' },
+                { l: 'MEMBERS', v: members.length, bgLeft: 'bg-[#b4c7e7]', bgRight: 'bg-[#cfdcf3]', img: 'assets/fa.png' },
+                { l: 'FEMALE', v: members.filter(x => x.gender === 'Female').length, bgLeft: 'bg-[#fce4d6]', bgRight: 'bg-[#fff1e6]', img: 'assets/f.png' },
+                { l: 'MALE', v: members.filter(x => x.gender === 'Male').length, bgLeft: 'bg-[#bdd7ee]', bgRight: 'bg-[#d9e9f6]', img: 'assets/m.png' },
+                { l: 'GIRL', v: members.filter(x => x.gender === 'Girl').length, bgLeft: 'bg-[#f8cbad]', bgRight: 'bg-[#fadbd0]', img: 'assets/g.png' },
+                { l: 'BOY', v: members.filter(x => x.gender === 'Boy').length, bgLeft: 'bg-[#9ee8ff]', bgRight: 'bg-[#c2f1ff]', img: 'assets/b.png' }
             ], [members]);
 
             const ageDisplay = useMemo(() => {
@@ -337,23 +325,23 @@
             if (view === 'login') return (
                 <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 animate-view">
                     <div className="w-full max-w-sm bg-white p-8 rounded-[48px] shadow-2xl text-center space-y-6 border-b-8 border-indigo-100 leading-none">
-                        <div className="mx-auto w-16 h-16 bg-[#8b5cf6] text-white rounded-[22px] flex items-center justify-center shadow-xl rotate-3 text-2xl font-black italic">P</div>
+                        <div className="mx-auto w-16 h-16 bg-[#a25fc5] text-white rounded-[22px] flex items-center justify-center shadow-xl rotate-3 text-2xl font-black italic">P</div>
                         <div>
-                            <h2 className="text-2xl font-black italic tracking-tighter text-[#8b5cf6] uppercase">Poshan Pro</h2>
+                            <h2 className="text-2xl font-black italic tracking-tighter text-[#a25fc5] uppercase">Poshan Pro</h2>
                             <p className="text-slate-400 text-[10px] font-bold uppercase mt-1 tracking-widest leading-none">Family Registry</p>
                         </div>
                         <div className="flex bg-slate-100 p-1 rounded-2xl gap-1 text-[10px] font-bold">
-                            <button onClick={() => setLoginTab('userpass')} className={`flex-1 py-3 rounded-xl uppercase transition-all ${loginTab === 'userpass' ? 'bg-[#8b5cf6] text-white shadow-md' : 'text-slate-500'}`}>User/Pass</button>
-                            <button onClick={() => setLoginTab('otp')} className={`flex-1 py-3 rounded-xl uppercase transition-all ${loginTab === 'otp' ? 'bg-[#8b5cf6] text-white shadow-md' : 'text-slate-500'}`}>OTP</button>
-                            <button onClick={() => setLoginTab('google')} className={`flex-1 py-3 rounded-xl uppercase transition-all ${loginTab === 'google' ? 'bg-[#8b5cf6] text-white shadow-md' : 'text-slate-500'}`}>Google</button>
+                            <button onClick={() => setLoginTab('userpass')} className={`flex-1 py-3 rounded-xl uppercase transition-all ${loginTab === 'userpass' ? 'bg-[#a25fc5] text-white shadow-md' : 'text-slate-500'}`}>User/Pass</button>
+                            <button onClick={() => setLoginTab('otp')} className={`flex-1 py-3 rounded-xl uppercase transition-all ${loginTab === 'otp' ? 'bg-[#a25fc5] text-white shadow-md' : 'text-slate-500'}`}>OTP</button>
+                            <button onClick={() => setLoginTab('google')} className={`flex-1 py-3 rounded-xl uppercase transition-all ${loginTab === 'google' ? 'bg-[#a25fc5] text-white shadow-md' : 'text-slate-500'}`}>Google</button>
                         </div>
                         <div className="space-y-4">
                             {loginTab === 'userpass' && (
                                 <form onSubmit={handleUserPassAuth} className="space-y-3">
                                     <input type="text" placeholder="Username" className="w-full p-4 border-2 border-slate-100 rounded-2xl font-bold outline-none text-sm" value={username} onChange={e => setUsername(e.target.value)} required />
                                     <input type="password" placeholder="Password (Min 6)" className="w-full p-4 border-2 border-slate-100 rounded-2xl font-bold outline-none text-sm" value={password} onChange={e => setPassword(e.target.value)} required />
-                                    <button type="submit" className="w-full py-4 bg-[#8b5cf6] text-white rounded-2xl font-black uppercase text-xs tracking-wider shadow-md">{isBtnLoading ? "Processing..." : (isSignUp ? "Sign Up" : "Login Now")}</button>
-                                    <button type="button" onClick={() => setIsSignUp(!isSignUp)} className="text-[10px] font-bold text-[#8b5cf6] underline block mx-auto mt-2">{isSignUp ? "Have account? Log In" : "New user? Sign Up"}</button>
+                                    <button type="submit" className="w-full py-4 bg-[#a25fc5] text-white rounded-2xl font-black uppercase text-xs tracking-wider shadow-md">{isBtnLoading ? "Processing..." : (isSignUp ? "Sign Up" : "Login Now")}</button>
+                                    <button type="button" onClick={() => setIsSignUp(!isSignUp)} className="text-[10px] font-bold text-[#a25fc5] underline block mx-auto mt-2">{isSignUp ? "Have account? Log In" : "New user? Sign Up"}</button>
                                 </form>
                             )}
                             {loginTab === 'otp' && (
@@ -364,7 +352,7 @@
                                                 <div className="absolute left-5 top-1/2 -translate-y-1/2 font-bold text-slate-400 border-r pr-3">+91</div>
                                                 <input placeholder="Mobile Number" className="w-full p-4 pl-16 border-2 border-slate-100 rounded-2xl font-bold outline-none text-sm" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0,10))} inputMode="tel" />
                                             </div>
-                                            <button onClick={sendOTP} className="w-full py-4 bg-[#8b5cf6] text-white rounded-2xl font-black uppercase text-xs tracking-wider shadow-md">Send OTP</button>
+                                            <button onClick={sendOTP} className="w-full py-4 bg-[#a25fc5] text-white rounded-2xl font-black uppercase text-xs tracking-wider shadow-md">Send OTP</button>
                                         </div>
                                     ) : (
                                         <div className="space-y-3">
@@ -385,81 +373,78 @@
             );
 
             return (
-                <div className="min-h-screen pb-20 bg-gradient-to-b from-[#f43f5e] to-[#e11d48] animate-view">
+                <div className="min-h-screen bg-[#e52165] animate-view">
                     
-                    {/* MODIFICATION: Upgraded Nav Bar properties to precisely track layout screenshot #1000067259.jpg */}
-                    <nav className="sticky top-0 bg-[#8b5cf6] text-white p-4 pt-6 pb-6 flex items-center justify-between shadow-xl z-[60]">
-                        <div className="flex items-center gap-3">
-                            {view !== 'dashboard' && <button onClick={() => {
-                                if (view === 'addHeadDashboard') setView('dashboard');
-                                else if (view === 'household' || view === 'selectRelation') setView('addHeadDashboard');
-                                else if (view === 'form') setView(formData.isFamilyHead ? 'addHeadDashboard' : 'household');
-                            }} className="p-1 active:scale-75 transition-transform"><Icons.ArrowLeft /></button>}
+                    {/* Top Nav Bar ONLY renders when current view is 'dashboard' */}
+                    {view === 'dashboard' && (
+                        <nav className="sticky top-0 bg-[#a25fc5] text-white p-4 pt-5 pb-5 flex items-center justify-between shadow-xl z-[60]">
                             <div className="flex flex-col text-left font-black tracking-tighter leading-none uppercase">
-                                <span className="text-xl tracking-widest font-extrabold">Famely</span>
-                                <span className="text-xl tracking-wider font-extrabold mt-1">Data</span>
+                                <span className="text-xl tracking-wider font-black font-sans">FAMELY</span>
+                                <span className="text-xl tracking-widest font-black font-sans mt-1.5">DATA</span>
                             </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <button onClick={() => setView('dashboard')} className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center border border-white/10 overflow-hidden shadow-inner active:scale-95 transition-transform">
-                                <Icons.Export s={18} />
-                            </button>
-                            <button onClick={handleLogout} className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center border border-white/10 overflow-hidden shadow-inner active:scale-95 transition-transform">
-                                <Icons.Settings s={18} />
-                            </button>
-                        </div>
-                    </nav>
+                            <div className="flex items-center gap-2">
+                                <button onClick={() => setView('dashboard')} className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shadow-inner active:scale-95 transition-transform">
+                                    <Icons.Export s={18} />
+                                </button>
+                                <button onClick={handleLogout} className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shadow-inner active:scale-95 transition-transform">
+                                    <Icons.Settings s={18} />
+                                </button>
+                            </div>
+                        </nav>
+                    )}
+
+                    {/* Standard Inner Pages Header - EXCLUDES custom headers built for other views */}
+                    {!['dashboard', 'addHeadDashboard', 'form', 'household', 'selectRelation'].includes(view) && (
+                        <nav className="sticky top-0 bg-indigo-700 text-white p-4 flex items-center justify-between shadow-xl z-[60]">
+                            <div className="flex items-center gap-3">
+                                <button onClick={() => {
+                                    if (view === 'selectRelation') setView('household');
+                                }} className="p-1 active:scale-75 transition-transform"><Icons.ArrowLeft /></button>
+                                <span className="text-xl font-black italic uppercase tracking-tighter leading-none">Poshan Pro</span>
+                            </div>
+                            <button onClick={handleLogout} className="p-2 bg-white/10 rounded-full active:bg-white/20 transition-colors"><Icons.LogOut /></button>
+                        </nav>
+                    )}
 
                     <div className="max-w-md mx-auto space-y-6">
                         {view === 'dashboard' && (
                             <div className="animate-view p-4 space-y-5">
-                                {/* Grid container for Premium Local Assets Cards */}
                                 <div className="grid grid-cols-2 gap-3">
                                     {stats.map((s, i) => (
-                                        <div key={i} className={`${s.c} h-[85px] rounded-[32px] shadow-lg flex items-center overflow-hidden active:scale-95 transition-all border-b-4 border-black/10`}>
-                                            {/* Left side text and value */}
-                                            <div className="flex-1 text-center flex flex-col justify-center items-center pl-2">
-                                                <p className="text-[10px] font-black text-slate-700 uppercase tracking-tight mb-0.5 leading-none">{s.l}</p>
+                                        <div key={i} className="h-[85px] rounded-[32px] shadow-lg flex overflow-hidden active:scale-95 transition-all">
+                                            <div className={`${s.bgLeft} w-[55%] flex flex-col justify-center items-center pl-1 text-center`}>
+                                                <p className="text-[10px] font-black text-slate-800 uppercase tracking-tight mb-0.5 leading-none">{s.l}</p>
                                                 <p className="text-3xl font-black text-slate-900 leading-none">{s.v}</p>
                                             </div>
-                                            {/* Right side High Quality Full Area Box - Completely preserved real color matrix */}
-                                            <div className="w-[85px] h-full flex items-end justify-center overflow-hidden">
-                                                <img src={s.img} alt={s.l} className="w-full h-full object-contain object-bottom" />
+                                            <div className={`${s.bgRight} w-[45%] flex items-end justify-center overflow-hidden`}>
+                                                <img src={s.img} alt={s.l} className="w-full h-[92%] object-contain object-bottom" />
                                             </div>
                                         </div>
                                     ))}
                                 </div>
 
-                                {/* White Bottom Panel matching image layout */}
-                                <div className="bg-white rounded-[44px] p-5 shadow-2xl border-4 border-rose-600/20 space-y-5 mt-4">
-                                    
-                                    {/* View Family Heads Button re-aligned to display Full body image on Left like sample */}
-                                    <button onClick={() => setView('addHeadDashboard')} className="w-full h-[105px] bg-gradient-to-r from-[#3c072c] via-[#610425] to-[#80031a] rounded-[32px] flex items-center justify-between pl-4 pr-4 text-white font-black uppercase tracking-wide active:scale-95 shadow-xl border-b-4 border-black/30 relative overflow-hidden">
+                                <div className="bg-[#f0f2f5] rounded-[44px] p-5 shadow-2xl border-none space-y-5 mt-4">
+                                    <button onClick={() => setView('addHeadDashboard')} className="w-full h-[105px] bg-gradient-to-r from-[#2a040b] to-[#7f000d] rounded-[32px] flex items-center justify-between pl-4 pr-5 text-white font-black uppercase tracking-wide active:scale-95 shadow-xl relative overflow-hidden">
                                         <div className="flex items-center gap-4 h-full">
-                                            {/* Grandpa asset/h.png perfectly placed on left with preserved color alignment */}
-                                            <div className="h-full w-[65px] flex items-end justify-center">
+                                            <div className="h-full w-[60px] flex items-end justify-center">
                                                 <img src="assets/h.png" alt="Grandpa Full" className="h-full w-full object-contain object-bottom" />
                                             </div>
-                                            
-                                            {/* Re-arranged Headline Labels stacked text matching screenshot layout */}
-                                            <div className="flex flex-col text-left leading-tight max-w-[200px]">
-                                                <span className="text-sm font-black italic tracking-wide uppercase">View</span>
-                                                <span className="text-lg font-black italic tracking-wide uppercase ml-4">Family</span>
-                                                <span className="text-lg font-black italic tracking-wide uppercase ml-12">Heads</span>
+                                            <div className="flex flex-col text-left leading-tight max-w-[200px] font-sans">
+                                                <span className="text-sm font-black italic tracking-wide uppercase">VIEW</span>
+                                                <span className="text-lg font-black italic tracking-wide uppercase ml-5">FAMILY</span>
+                                                <span className="text-lg font-black italic tracking-wide uppercase ml-14">HEADS</span>
                                             </div>
                                         </div>
-                                        <div className="z-10 bg-white/10 p-2 rounded-xl">
+                                        <div className="z-10 bg-white/20 p-2 rounded-xl">
                                             <Icons.ChevronRight />
                                         </div>
                                     </button>
 
-                                    {/* Styled Search Bar with soft Lavender Tint */}
                                     <div className="relative">
-                                        <input placeholder="Search Family ID, Head or Member name..." className="w-full p-5 pr-14 bg-[#e8e4f5] border-2 border-transparent rounded-[24px] font-bold shadow-inner outline-none focus:border-purple-300 transition-all text-slate-700 placeholder-slate-400 text-sm" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
-                                        <div className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400"><Icons.Search /></div>
+                                        <input placeholder="Search Family ID, Head or Member name..." className="w-full p-5 pr-14 bg-[#dbe1f1] border-2 border-[#8e9ec7] rounded-[24px] font-bold shadow-inner outline-none text-slate-700 placeholder-slate-500 text-sm" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                                        <div className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500"><Icons.Search /></div>
                                     </div>
 
-                                    {/* Dropdown Live Global Search Container */}
                                     {searchTerm.trim().length > 0 && (
                                         <div className="relative bg-white border border-slate-200 shadow-2xl rounded-[28px] overflow-hidden z-50 p-2 max-h-[300px] overflow-y-auto no-scrollbar animate-view">
                                             {globalSearchResults.length > 0 ? (
@@ -483,175 +468,285 @@
                             </div>
                         )}
 
+                        {/* ======================================================== */}
+                        {/* HEAD MANAGEMENT VIEW                                     */}
+                        {/* ======================================================== */}
                         {view === 'addHeadDashboard' && (
-                            <div className="p-4 space-y-4 animate-view">
-                                <div className="bg-indigo-700 text-white p-6 rounded-[28px] shadow-lg text-center border-b-4 border-indigo-900 font-black italic uppercase text-xl leading-none">Head Management</div>
-                                <button onClick={() => {setFormData({...initialForm, isFamilyHead: true, relationToHead: 'Self'}); setEditingId(null); setView('form');}} className="w-full p-6 bg-indigo-700 text-white rounded-[32px] font-black flex items-center justify-center gap-3 active:scale-95 shadow-xl uppercase italic none"><Icons.Plus s={24} /> New Head Registration</button>
-                                <div className="space-y-4 pt-2">
-                                    {filteredHeads.map(h => (
-                                        <div key={h.id} className="bg-white p-4 rounded-[32px] border-b-4 border-slate-200 flex items-center justify-between shadow-sm active:scale-95 transition-all">
-                                            <div onClick={() => {setViewingHead(h); setView('household');}} className="flex items-center gap-4 flex-1 min-w-0 cursor-pointer">
-                                                <img src={h.photoURL || "https://cdn-icons-png.flaticon.com/512/3063/3063822.png"} className="w-16 h-16 rounded-2xl object-cover bg-slate-100 border-2 shadow-sm" />
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center gap-1.5 mb-1.5 leading-none">
-                                                        <span className="text-[9px] font-black bg-indigo-100 text-indigo-700 px-2.5 py-0.5 rounded-lg uppercase tracking-widest">ID: {h.poribarNo}</span>
-                                                        <span className="text-[9px] font-black bg-rose-100 text-rose-700 px-2 py-0.5 rounded-lg uppercase italic shadow-sm">Head</span>
-                                                    </div>
-                                                    <h4 className="font-black uppercase text-slate-800 truncate leading-none text-lg">{h.firstName} {h.lastName}</h4>
-                                                    <p className="text-[10px] font-bold text-slate-400 italic mt-1.5 uppercase leading-none">{h.age || '00-00'} OLD</p>
-                                                </div>
-                                            </div>
-                                            {h.mobile && ( <a href={`tel:${h.mobile}`} className="p-4 bg-emerald-500 text-white rounded-2xl shadow-md active:scale-75 transition-transform ml-2 shrink-0 flex items-center justify-center"><Icons.CallLogo s={18} /></a> )}
+                            <div className="min-h-screen bg-[#fde1e9] animate-view pb-20 -mt-6">
+                                <div className="bg-[#a65ebd] rounded-b-[24px] pt-8 pb-6 px-4 shadow-sm relative z-10">
+                                    <div className="flex justify-between items-center mb-5">
+                                        <button onClick={() => setView('dashboard')} className="text-white border-[1.5px] border-white/60 p-1.5 rounded-[8px] active:scale-75 transition-transform bg-white/5">
+                                            <Icons.CurvedBack />
+                                        </button>
+                                        <div className="border-[1.5px] border-[#ccaad6] px-4 py-2 mx-3 flex-1 flex justify-center items-center">
+                                            <h1 className="text-white font-black italic uppercase text-[15px] tracking-widest leading-none drop-shadow-sm mt-0.5">Head Management</h1>
                                         </div>
-                                    ))}
+                                        <button onClick={() => setRefreshTick(t => t + 1)} className="border-[1.5px] border-[#ccaad6] p-1.5 rounded-[8px] text-white bg-white/5 active:bg-white/20 transition-colors">
+                                            <Icons.Refresh s={20} />
+                                        </button>
+                                    </div>
+                                    <button onClick={() => {setFormData({...initialForm, isFamilyHead: true, relationToHead: 'Self'}); setEditingId(null); setView('form');}} className="w-full border-[1.5px] border-[#ccaad6] text-white rounded-[10px] py-3 text-[14px] font-bold uppercase tracking-wide flex items-center justify-center gap-2 bg-transparent active:bg-white/10 transition-colors">
+                                        New Head Registration <Icons.Plus s={22} />
+                                    </button>
+                                </div>
+                                <div className="p-4 space-y-3 mt-1">
+                                    {filteredHeads.map(h => {
+                                        const displayAge = h.age ? (h.age.includes('-') ? `${h.age.split('-')[0]}Y - ${h.age.split('-')[1]}M` : h.age) : '00Y - 00M';
+                                        return (
+                                        <div key={h.id} className="bg-white p-3 rounded-[24px] border-[1.5px] border-[#ffb3c6] flex items-center gap-3 shadow-sm active:scale-95 transition-transform">
+                                            <div onClick={() => {setViewingHead(h); setView('household');}} className="w-[65px] h-[65px] bg-[#f8f9fa] rounded-[16px] border-[1.5px] border-slate-100 shrink-0 flex items-center justify-center overflow-hidden cursor-pointer">
+                                                <img src={h.photoURL || "https://cdn-icons-png.flaticon.com/512/3063/3063822.png"} className="w-full h-full object-cover" />
+                                            </div>
+                                            <div onClick={() => {setViewingHead(h); setView('household');}} className="flex-1 min-w-0 cursor-pointer py-1">
+                                                <div className="flex items-center gap-1.5 mb-2">
+                                                    <span className="text-[9px] font-black bg-[#e6ddf7] text-[#8363c4] px-1.5 py-0.5 rounded uppercase tracking-wider">ID: {h.poribarNo || '1'}</span>
+                                                    <span className="text-[9px] font-black bg-[#ffe1e6] text-[#c96272] px-1.5 py-0.5 rounded uppercase italic">Head</span>
+                                                    <span className="text-[9px] font-black bg-[#5a6270] text-white px-2 py-0.5 rounded uppercase tracking-wider">{displayAge}</span>
+                                                </div>
+                                                <h4 className="font-black uppercase text-[#222222] text-[16px] truncate leading-none mt-1">{h.firstName} {h.lastName}</h4>
+                                            </div>
+                                            <a href={`tel:${h.mobile || ''}`} onClick={(e) => {if(!h.mobile) { e.preventDefault(); alert('No mobile number found'); }}} className="w-[45px] h-[45px] bg-[#0bb37a] text-white rounded-[14px] shadow-sm flex items-center justify-center active:scale-90 transition-transform shrink-0">
+                                                <Icons.Phone s={22} />
+                                            </a>
+                                        </div>
+                                    )})}
                                 </div>
                             </div>
                         )}
 
-                        {view === 'household' && viewingHead && (
-                            <div className="p-4 space-y-6 animate-view">
-                                <div className="bg-indigo-700 p-6 rounded-[48px] text-white shadow-2xl relative overflow-hidden">
-                                    <div className="flex gap-5 items-start relative z-10 leading-none">
-                                        <img src={viewingHead.photoURL || "https://cdn-icons-png.flaticon.com/512/3063/3063822.png"} className="w-24 h-24 rounded-[32px] border-4 border-white/20 object-cover shadow-lg" />
-                                        <div className="flex-1">
-                                            <p className="text-[11px] font-black opacity-60 uppercase italic mb-2 tracking-widest leading-none">Head Profile</p>
-                                            <h3 className="text-3xl font-black uppercase leading-none tracking-tighter">{viewingHead.firstName} {viewingHead.lastName}</h3>
-                                            <p className="mt-4 text-xs font-black italic bg-white/10 w-fit px-4 py-1.5 rounded-full uppercase tracking-tighter">ID: {viewingHead.poribarNo}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex gap-3 relative z-10 mt-5 leading-none">
-                                        <button onClick={() => {setEditingId(viewingHead.id); setFormData(viewingHead); setView('form');}} className="flex-1 bg-white text-indigo-700 p-4 rounded-[24px] font-black uppercase italic text-xs shadow-sm active:scale-95 transition-transform">Edit Profile</button>
-                                        <button onClick={() => handleDeleteFamily(viewingHead.id)} className="bg-rose-500 p-4 rounded-[24px] text-white shadow-sm active:scale-95 transition-all leading-none"><Icons.Trash /></button>
+                        {/* ======================================================== */}
+                        {/* REGISTRATION FORM VIEW                                   */}
+                        {/* ======================================================== */}
+                        {view === 'form' && (
+                            <div className="min-h-screen bg-[#fde1e9] animate-view pb-16 -mt-6">
+                                <div className="bg-[#a65ebd] rounded-b-[24px] pt-8 pb-8 px-4 shadow-sm relative z-10">
+                                    <div className="flex justify-between items-center">
+                                        <button onClick={() => setView(formData.isFamilyHead ? 'addHeadDashboard' : 'household')} className="border-[1.5px] border-white/60 p-2 rounded-[10px] text-white active:scale-75 transition-transform bg-transparent">
+                                            <Icons.CurvedBack />
+                                        </button>
+                                        <h1 className="text-white font-black italic uppercase text-[17px] tracking-wider leading-none text-center flex-1 drop-shadow-sm">
+                                            Registration Form
+                                        </h1>
+                                        <button onClick={() => setRefreshTick(t => t + 1)} className="border-[1.5px] border-white/60 p-2 rounded-[10px] text-white active:bg-white/20 transition-colors bg-transparent">
+                                            <Icons.Refresh s={20} />
+                                        </button>
                                     </div>
                                 </div>
-                                <div className="space-y-3">
-                                    {members.filter(m => m.headId === viewingHead.id && !m.isFamilyHead).map(m => (
-                                        <div key={m.id} className="bg-white p-4 rounded-[32px] border-b-4 border-slate-200 flex items-center gap-4 shadow-sm active:scale-95 transition-all">
-                                            <img src={m.photoURL || "https://cdn-icons-png.flaticon.com/512/3063/3063822.png"} className="w-14 h-14 rounded-2xl object-cover border" />
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-2 mb-1.5">
-                                                    <p className="text-[10px] font-black text-indigo-500 uppercase italic leading-none">{m.relationToHead}</p>
-                                                    {m.mobile && ( <a href={`tel:${m.mobile}`} className="p-1 bg-slate-100 text-slate-600 rounded-full flex items-center justify-center active:scale-75"><Icons.CallLogo s={10} /></a> )}
-                                                </div>
-                                                <h5 className="font-black uppercase text-base leading-none text-slate-800 truncate">{m.firstName} {m.lastName}</h5>
-                                                <p className="text-[10px] font-bold text-slate-400 mt-1.5 uppercase tracking-tighter leading-none">{m.age} • {m.gender}</p>
+                                <div className="p-5 space-y-6">
+                                    <div className="flex items-center gap-4">
+                                        <div onClick={() => fileInputRef.current?.click()} className="w-[125px] h-[125px] bg-white border-[3px] border-[#ef5f8b] rounded-[20px] shadow-sm flex items-center justify-center overflow-hidden relative active:scale-95 transition-transform shrink-0">
+                                            {formData.photoURL ? <img src={formData.photoURL} className="w-full h-full object-cover" /> : <Icons.FormImagePlaceholder />}
+                                            <input type="file" ref={fileInputRef} onChange={(e) => {
+                                                const f = e.target.files[0]; if(!f) return;
+                                                const r = new FileReader(); r.onload = (ev) => setFormData({...formData, photoURL: ev.target.result}); r.readAsDataURL(f);
+                                            }} className="hidden" accept="image/*" />
+                                        </div>
+                                        <div className="flex-1 space-y-1.5">
+                                            <label className="text-[12px] font-black text-[#ef5f8b] uppercase tracking-wide block mb-1">FAMILY ID*</label>
+                                            <input placeholder="FAMILY CODE" className="w-full py-4 px-5 border-[1.5px] border-[#94a3b8] rounded-[18px] font-bold text-slate-700 outline-none shadow-sm uppercase placeholder-slate-400 bg-white" value={formData.poribarNo} onChange={e => setFormData({...formData, poribarNo: e.target.value})} disabled={!formData.isFamilyHead} />
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white p-5 rounded-[28px] border-[2.5px] border-[#ef5f8b] shadow-sm space-y-5">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="text-[10px] font-black italic text-slate-400 uppercase tracking-widest block mb-2">FIRST NAME *</label>
+                                                <input className="w-full p-4 border-[1.5px] border-[#94a3b8] rounded-[16px] font-bold italic outline-none shadow-sm uppercase text-slate-700" value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} />
                                             </div>
-                                            <div className="flex items-center gap-1.5 leading-none">
-                                                <button onClick={() => {setEditingId(m.id); setFormData(m); setView('form');}} className="p-3 bg-slate-50 text-slate-300 rounded-2xl active:text-indigo-600 transition-colors leading-none"><Icons.Edit /></button>
-                                                <button onClick={() => handleDeleteMember(m.id)} className="p-3 bg-rose-50 text-rose-500 rounded-2xl active:text-rose-700 transition-colors leading-none"><Icons.Trash /></button>
+                                            <div>
+                                                <label className="text-[10px] font-black italic text-slate-400 uppercase tracking-widest block mb-2">LAST NAME *</label>
+                                                <input className="w-full p-4 border-[1.5px] border-[#94a3b8] rounded-[16px] font-bold italic outline-none shadow-sm uppercase text-slate-700" value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} />
                                             </div>
                                         </div>
-                                    ))}
-                                    <button onClick={() => setView('selectRelation')} className="w-full border-4 border-dashed border-slate-200 p-12 rounded-[48px] flex flex-col items-center text-slate-300 gap-3 bg-white/50 active:bg-slate-100 shadow-inner transition-all leading-none">
-                                        <div className="bg-slate-50 p-4 rounded-full border shadow-sm"><Icons.Plus s={32} /></div>
-                                        <span className="text-[11px] font-black uppercase italic tracking-widest opacity-60">Add Member to Household</span>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="text-[10px] font-black italic text-slate-400 uppercase tracking-widest block mb-2">GENDER *</label>
+                                                <div className="flex bg-[#eef2f6] p-1 rounded-[16px] gap-1 shadow-inner border-[1.5px] border-[#94a3b8]">
+                                                    {['Boy', 'Girl'].includes(formData.relationToHead) ? (
+                                                        ['Boy', 'Girl'].map(g => {
+                                                            const isLocked = (formData.relationToHead === 'Boy' && g === 'Girl') || (formData.relationToHead === 'Girl' && g === 'Boy');
+                                                            const isActive = formData.gender === g;
+                                                            return (
+                                                                <button key={g} type="button" disabled={isLocked} onClick={() => setFormData({...formData, gender: g})} 
+                                                                className={`flex-1 py-3.5 rounded-[12px] font-black text-[10px] uppercase transition-all ${isLocked ? 'opacity-20 cursor-not-allowed' : ''} ${isActive ? 'bg-[#a65ebd] text-white border border-slate-600 shadow-md' : 'text-[#94a3b8] bg-transparent border border-transparent'}`}>
+                                                                    {g}
+                                                                </button>
+                                                            );
+                                                        })
+                                                    ) : (
+                                                        ['Male', 'Female'].map(g => {
+                                                            const isLocked = !formData.isFamilyHead && (
+                                                                (['Wife', 'Mother', 'Mother in Law'].includes(formData.relationToHead) && g === 'Male') ||
+                                                                (['Husband', 'Father', 'Father in Law'].includes(formData.relationToHead) && g === 'Female')
+                                                            );
+                                                            const isActive = formData.gender === g;
+                                                            return (
+                                                                <button key={g} type="button" disabled={isLocked} onClick={() => setFormData({...formData, gender: g})} 
+                                                                className={`flex-1 py-3.5 rounded-[12px] font-black text-[10px] uppercase transition-all ${isLocked ? 'opacity-20 cursor-not-allowed' : ''} ${isActive ? 'bg-[#a65ebd] text-white border border-slate-600 shadow-md' : 'text-[#94a3b8] bg-transparent border border-transparent'}`}>
+                                                                    {g}
+                                                                </button>
+                                                            );
+                                                        })
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="relative">
+                                                <label className="text-[10px] font-black italic text-slate-400 uppercase tracking-widest block mb-2">BIRTH DATE *</label>
+                                                <input placeholder="DD/MM/YYYY" className="w-full p-4 border-[1.5px] border-[#94a3b8] rounded-[16px] font-bold shadow-sm outline-none placeholder-slate-400 text-slate-700" value={formData.birthDate} onChange={e => {
+                                                        let val = e.target.value.replace(/\D/g, ''); let len = val.length;
+                                                        if (len >= 2) { let dd = parseInt(val.slice(0, 2)); if (dd > 31 || dd === 0) return; }
+                                                        if (len >= 4) { let mm = parseInt(val.slice(2, 4)); if (mm > 12 || mm === 0) return; }
+                                                        if (len === 8) { let yyyy = parseInt(val.slice(4, 8)); if (yyyy > 2026) return; }
+                                                        if (len > 8) val = val.slice(0, 8);
+                                                        let formatted = len <= 2 ? val : len <= 4 ? `${val.slice(0, 2)}/${val.slice(2)}` : `${val.slice(0, 2)}/${val.slice(2, 4)}/${val.slice(4, 8)}`;
+                                                        setFormData({...formData, birthDate: formatted});
+                                                    }} inputMode="numeric" maxLength={10} />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-black italic text-slate-400 uppercase tracking-widest block mb-2">MOBILE NO</label>
+                                            <input className="w-full p-4 border-[1.5px] border-[#94a3b8] rounded-[16px] font-bold outline-none shadow-sm text-slate-700" value={formData.mobile} onChange={e => setFormData({...formData, mobile: e.target.value.replace(/\D/g,'')})} maxLength={10} inputMode="tel" />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-black italic text-slate-400 uppercase tracking-widest block mb-2">AADHAAR NO*</label>
+                                            <input className="w-full p-4 border-[1.5px] border-[#94a3b8] rounded-[16px] font-bold outline-none shadow-sm text-slate-700" value={formData.aadhaar} onChange={e => setFormData({...formData, aadhaar: e.target.value.replace(/\D/g,'')})} maxLength={12} inputMode="numeric" />
+                                        </div>
+                                    </div>
+                                    <button onClick={handleSave} disabled={isSaving} className="w-full py-[18px] bg-[#ef5f8b] text-white rounded-full font-black italic text-[22px] shadow-lg active:scale-95 border-[3px] border-[#312e81] mt-2 uppercase tracking-widest transition-all leading-none drop-shadow-md">
+                                        {isSaving ? "SYNCING..." : "SAVE & SYNC"}
                                     </button>
                                 </div>
                             </div>
                         )}
 
-                        {view === 'selectRelation' && viewingHead && (
-                            <div className="p-4 space-y-4 animate-view">
-                                <div className="bg-indigo-600 text-white p-5 rounded-[28px] shadow-md text-center font-black italic uppercase text-lg leading-none">Select Relation to Head</div>
-                                <div className="grid grid-cols-1 gap-3 pt-2">
-                                    {relationOptions.map(rel => (
-                                        <button key={rel} onClick={() => {
-                                                let targetGender = ['Wife', 'Mother', 'Mother in Law', 'Girl'].includes(rel) ? 'Girl' : 'Boy';
-                                                setFormData({ ...initialForm, headId: viewingHead.id, isFamilyHead: false, poribarNo: viewingHead.poribarNo, relationToHead: rel, gender: targetGender });
-                                                setView('form');
-                                            }} className="w-full p-5 bg-white border-2 border-slate-200 rounded-[24px] text-left font-black uppercase tracking-wider text-slate-700 hover:border-indigo-500 hover:text-indigo-700 transition-all shadow-sm active:scale-95 flex justify-between items-center" >
-                                            <span>{rel}</span><Icons.ChevronRight />
+                        {/* ======================================================== */}
+                        {/* HOUSEHOLD VIEW                                           */}
+                        {/* ======================================================== */}
+                        {view === 'household' && viewingHead && (
+                            <div className="min-h-screen bg-[#fde1e9] animate-view pb-20 -mt-6">
+                                <div className="bg-[#a65ebd] rounded-b-[24px] pt-8 pb-8 px-4 shadow-sm relative z-10">
+                                    <div className="flex justify-between items-center mb-1">
+                                        <button onClick={() => setView('addHeadDashboard')} className="border-[1.5px] border-white/60 p-2 rounded-[10px] text-white active:scale-75 transition-transform bg-transparent">
+                                            <Icons.CurvedBack />
                                         </button>
-                                    ))}
+                                        <h1 className="text-white font-black italic uppercase text-[17px] tracking-widest leading-none text-center flex-1 drop-shadow-sm">
+                                            HEAD FAMILY DETAILS
+                                        </h1>
+                                        <button onClick={() => setRefreshTick(t => t + 1)} className="border-[1.5px] border-white/60 p-2 rounded-[10px] text-white active:bg-white/20 transition-colors bg-transparent">
+                                            <Icons.Refresh s={20} />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="p-4 space-y-6">
+                                    <div className="bg-[#9d5baf] p-4 rounded-[28px] shadow-md relative">
+                                        <div className="flex justify-between items-start mb-4">
+                                            <span className="bg-[#f2eff4] text-[#ef5f8b] text-[10px] font-black italic px-4 py-1.5 rounded-full shadow-sm">
+                                                Head Profile
+                                            </span>
+                                            <span className="bg-[#d49bb4] border-[1.5px] border-black text-black text-[11px] font-black px-4 py-1.5 rounded-full tracking-widest">
+                                                ID: {viewingHead.poribarNo || '1'}
+                                            </span>
+                                        </div>
+
+                                        <div className="flex gap-4 items-center">
+                                            <div className="w-[90px] h-[90px] rounded-[24px] border-[3px] border-[#293260] bg-white overflow-hidden shrink-0 flex items-center justify-center shadow-sm">
+                                                <img src={viewingHead.photoURL || "https://cdn-icons-png.flaticon.com/512/3063/3063822.png"} className="w-[95%] h-[95%] rounded-[18px] object-cover bg-slate-100" />
+                                            </div>
+                                            <div className="flex flex-col gap-2.5">
+                                                <div className="bg-white/20 px-3.5 py-1.5 rounded-[8px] inline-block w-fit shadow-sm">
+                                                    <h3 className="text-[17px] font-black uppercase text-white leading-none tracking-wide">{viewingHead.firstName} {viewingHead.lastName}</h3>
+                                                </div>
+                                                <div className="bg-white/20 px-3.5 py-1.5 rounded-[8px] inline-block w-fit shadow-sm">
+                                                    <p className="text-[11px] font-black italic text-white uppercase leading-none tracking-widest">
+                                                        {viewingHead.age ? (viewingHead.age.includes('-') ? `${viewingHead.age.split('-')[0]}Y - ${viewingHead.age.split('-')[1]}M` : viewingHead.age) : '00Y - 00M'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex justify-end gap-3 mt-5">
+                                            <button onClick={() => {setEditingId(viewingHead.id); setFormData(viewingHead); setView('form');}} className="bg-white border-[1.5px] border-black text-[#4f46e5] px-5 py-2.5 rounded-full font-black uppercase text-[12px] shadow-sm active:scale-95 transition-transform tracking-wider">
+                                                EDIT PROFILE
+                                            </button>
+                                            <button onClick={() => handleDeleteFamily(viewingHead.id)} className="bg-[#ef5f8b] w-[42px] h-[42px] flex items-center justify-center rounded-[12px] text-white shadow-sm active:scale-95 transition-all">
+                                                <Icons.Trash />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        {members.filter(m => m.headId === viewingHead.id && !m.isFamilyHead).map(m => (
+                                            <div key={m.id} className="bg-white p-4 rounded-[32px] border-[1.5px] border-[#ffb3c6] flex items-center gap-4 shadow-sm active:scale-95 transition-all">
+                                                <img src={m.photoURL || "https://cdn-icons-png.flaticon.com/512/3063/3063822.png"} className="w-14 h-14 rounded-2xl object-cover border" />
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2 mb-1.5">
+                                                        <p className="text-[10px] font-black text-[#ef5f8b] uppercase italic leading-none tracking-widest">{m.relationToHead}</p>
+                                                        {m.mobile && ( <a href={`tel:${m.mobile}`} className="p-1 bg-[#fde1e9] text-[#ef5f8b] rounded-full flex items-center justify-center active:scale-75"><Icons.CallLogo s={10} /></a> )}
+                                                    </div>
+                                                    <h5 className="font-black uppercase text-base leading-none text-[#222222] truncate">{m.firstName} {m.lastName}</h5>
+                                                    <p className="text-[10px] font-bold text-slate-500 mt-1.5 uppercase tracking-tighter leading-none">{m.age} • {m.gender}</p>
+                                                </div>
+                                                <div className="flex items-center gap-1.5 leading-none">
+                                                    <button onClick={() => {setEditingId(m.id); setFormData(m); setView('form');}} className="p-3 bg-indigo-50 text-indigo-400 rounded-2xl active:text-indigo-600 transition-colors leading-none"><Icons.Edit /></button>
+                                                    <button onClick={() => handleDeleteMember(m.id)} className="p-3 bg-rose-50 text-rose-400 rounded-2xl active:text-rose-600 transition-colors leading-none"><Icons.Trash /></button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <button onClick={() => setView('selectRelation')} className="w-full border-[2px] border-dashed border-[#ef5f8b] py-14 px-6 rounded-[32px] flex flex-col items-center justify-center gap-4 bg-transparent active:bg-white/20 transition-all text-[#ef5f8b]">
+                                        <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm border-[1px] border-[#ef5f8b]/20">
+                                            <Icons.Plus s={32} className="text-[#ef5f8b]" /> 
+                                        </div>
+                                        <span className="text-[12px] font-black uppercase italic tracking-widest text-[#ef5f8b] drop-shadow-sm">ADD MEMBER TO HOUSEHOLD</span>
+                                    </button>
                                 </div>
                             </div>
                         )}
 
-                        {view === 'form' && (
-                            <div className="p-4 space-y-6 pb-12 animate-view">
-                                <div className="flex items-center gap-6 pt-2 leading-none">
-                                    <div onClick={() => fileInputRef.current?.click()} className="w-32 h-32 bg-white border-[6px] border-white rounded-[44px] shadow-2xl flex items-center justify-center overflow-hidden relative ring-4 ring-indigo-50 active:scale-95 transition-transform shrink-0">
-                                        {formData.photoURL ? <img src={formData.photoURL} className="w-full h-full object-cover" /> : <div className="text-amber-400"><Icons.User s={40} /></div>}
-                                        <input type="file" ref={fileInputRef} onChange={(e) => {
-                                            const f = e.target.files[0]; if(!f) return;
-                                            const r = new FileReader(); r.onload = (ev) => setFormData({...formData, photoURL: ev.target.result}); r.readAsDataURL(f);
-                                        }} className="hidden" accept="image/*" />
-                                    </div>
-                                    <div className="flex-1 space-y-2">
-                                        <div className="flex justify-between items-center">
-                                            <CompactLabel>Family ID</CompactLabel>
-                                            {!formData.isFamilyHead && ( <span className="text-[10px] font-black bg-indigo-100 text-indigo-700 px-2.5 py-1 rounded-full uppercase mb-1.5 tracking-wider italic">{formData.relationToHead}</span> )}
-                                        </div>
-                                        <input placeholder="Family Code" className="w-full p-5 border-2 border-slate-200 rounded-[24px] font-black outline-none focus:border-indigo-400 shadow-sm leading-none uppercase" value={formData.poribarNo} onChange={e => setFormData({...formData, poribarNo: e.target.value})} disabled={!formData.isFamilyHead} />
-                                    </div>
+                        {/* ======================================================== */}
+                        {/* SELECT RELATION VIEW EXACTLY MATCHING SCREENSHOT         */}
+                        {/* ======================================================== */}
+                        {view === 'selectRelation' && viewingHead && (
+                            <div className="min-h-screen bg-[#fde1e9] animate-view pb-20 -mt-6">
+                                
+                                {/* Custom Purple Header with Back button for functionality */}
+                                <div className="bg-[#a65ebd] rounded-b-[32px] pt-12 pb-8 px-4 shadow-sm relative z-10 flex items-center justify-center">
+                                    <button onClick={() => setView('household')} className="absolute left-4 border-[1.5px] border-white/60 p-2 rounded-[10px] text-white active:scale-75 transition-transform bg-transparent">
+                                        <Icons.CurvedBack />
+                                    </button>
+                                    <h1 className="text-white font-black italic uppercase text-[17px] tracking-widest leading-none drop-shadow-sm text-center">
+                                        SELECT RELATION TO HEAD
+                                    </h1>
                                 </div>
 
-                                <div className="bg-white p-6 rounded-[40px] border-b-8 border-slate-200 shadow-md space-y-5">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div><CompactLabel>First Name</CompactLabel><input className="w-full p-4 border-2 border-slate-100 rounded-2xl font-bold italic outline-none focus:border-indigo-300 transition-all shadow-sm font-bold uppercase" value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} /></div>
-                                        <div><CompactLabel>Last Name</CompactLabel><input className="w-full p-4 border-2 border-slate-100 rounded-2xl font-bold italic outline-none focus:border-indigo-300 transition-all shadow-sm font-bold uppercase" value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} /></div>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <CompactLabel>Gender</CompactLabel>
-                                            <div className="flex bg-slate-100 p-1.5 rounded-2xl gap-1 shadow-inner leading-none">
-                                                {['Boy', 'Girl'].includes(formData.relationToHead) ? (
-                                                    ['Boy', 'Girl'].map(g => {
-                                                        const isLocked = (formData.relationToHead === 'Boy' && g === 'Girl') || (formData.relationToHead === 'Girl' && g === 'Boy');
-                                                        return (
-                                                            <button key={g} type="button" disabled={isLocked} onClick={() => setFormData({...formData, gender: g})} className={`flex-1 py-4 rounded-xl font-black text-[10px] uppercase transition-all ${isLocked ? 'opacity-20 cursor-not-allowed bg-slate-200 text-slate-400' : ''} ${formData.gender === g ? 'bg-indigo-700 text-white shadow-lg font-bold' : 'text-slate-400 opacity-60 font-bold'}`}>{g}</button>
-                                                        );
-                                                    })
-                                                ) : (
-                                                    ['Male', 'Female'].map(g => {
-                                                        const isLocked = !formData.isFamilyHead && (
-                                                            (['Wife', 'Mother', 'Mother in Law'].includes(formData.relationToHead) && g === 'Male') ||
-                                                            (['Husband', 'Father', 'Father in Law'].includes(formData.relationToHead) && g === 'Female')
-                                                        );
-                                                        return (
-                                                            <button key={g} type="button" disabled={isLocked} onClick={() => setFormData({...formData, gender: g})} className={`flex-1 py-4 rounded-xl font-black text-[10px] uppercase transition-all ${isLocked ? 'opacity-20 cursor-not-allowed bg-slate-200 text-slate-400' : ''} ${formData.gender === g ? 'bg-indigo-700 text-white shadow-lg font-bold' : 'text-slate-400 opacity-60 font-bold'}`}>{g}</button>
-                                                        );
-                                                    })
-                                                )}
-                                            </div>
-                                        </div>
-                                        <div className="relative leading-none">
-                                            <CompactLabel>Birth Date</CompactLabel>
-                                            <input placeholder="DD/MM/YYYY" className="w-full p-4 border-2 border-slate-100 rounded-2xl font-bold shadow-sm outline-none font-bold" value={formData.birthDate} onChange={e => {
-                                                    let val = e.target.value.replace(/\D/g, ''); let len = val.length;
-                                                    if (len >= 2) { let dd = parseInt(val.slice(0, 2)); if (dd > 31 || dd === 0) return; }
-                                                    if (len >= 4) { let mm = parseInt(val.slice(2, 4)); if (mm > 12 || mm === 0) return; }
-                                                    if (len === 8) { let yyyy = parseInt(val.slice(4, 8)); if (yyyy > 2026) return; }
-                                                    if (len > 8) val = val.slice(0, 8);
-                                                    let formatted = len <= 2 ? val : len <= 4 ? `${val.slice(0, 2)}/${val.slice(2)}` : `${val.slice(0, 2)}/${val.slice(2, 4)}/${val.slice(4, 8)}`;
-                                                    setFormData({...formData, birthDate: formatted});
-                                                }} inputMode="numeric" maxLength={10} />
-                                            {ageDisplay && <div className="absolute -bottom-5 right-2 text-[10px] font-black text-emerald-600 bg-white px-2.5 py-1 rounded-full border shadow-sm z-10 animate-bounce italic leading-none shadow-emerald-50">Age: {ageDisplay}</div>}
+                                <div className="p-5 mt-2">
+                                    {/* Dashed Background Container */}
+                                    <div className="bg-[#d2bcc5] border-[2px] border-dashed border-[#dc8f9e] rounded-[32px] p-6 pb-8 shadow-sm">
+                                        <div className="flex flex-wrap justify-between gap-y-5">
+                                            {relationOptions.map((rel, index) => {
+                                                // Check if it's the last item and total count is odd to center it
+                                                const isOddLast = (relationOptions.length % 2 !== 0) && (index === relationOptions.length - 1);
+                                                
+                                                return (
+                                                    <button key={rel} onClick={() => {
+                                                            let targetGender = ['Wife', 'Mother', 'Mother in Law', 'Girl'].includes(rel) ? 'Girl' : 'Boy';
+                                                            setFormData({ ...initialForm, headId: viewingHead.id, isFamilyHead: false, poribarNo: viewingHead.poribarNo, relationToHead: rel, gender: targetGender });
+                                                            setView('form');
+                                                        }} 
+                                                        className={`bg-white border-[2px] border-[#a65ebd] rounded-full py-4 px-5 font-black uppercase tracking-wider text-slate-700 active:scale-95 transition-transform flex justify-between items-center shadow-sm ${isOddLast ? 'mx-auto w-[60%]' : 'w-[47%]'}`} >
+                                                        <span className="text-[12px] ml-2">{rel}</span>
+                                                        <div className="opacity-80 scale-90"><Icons.ChevronRight /></div>
+                                                    </button>
+                                                );
+                                            })}
                                         </div>
                                     </div>
-
-                                    <div className="space-y-4 pt-2 leading-none">
-                                        <div className="relative">
-                                            <CompactLabel required={false}>Mobile</CompactLabel>
-                                            <div className="relative flex items-center">
-                                                <input className="w-full p-4 pr-12 border-2 border-slate-100 rounded-2xl font-bold outline-none shadow-sm font-bold" value={formData.mobile} onChange={e => setFormData({...formData, mobile: e.target.value.replace(/\D/g,'')})} maxLength={10} inputMode="tel" />
-                                                {formData.mobile.length === 10 && ( <div className="absolute right-4 animate-view"><Icons.CheckCircle /></div> )}
-                                            </div>
-                                        </div>
-                                        <div className="relative">
-                                            <CompactLabel required={false}>Aadhaar</CompactLabel>
-                                            <div className="relative flex items-center">
-                                                {/* Aadhaar input placeholder structured safely under privacy guidelines */}
-                                                <input className="w-full p-4 pr-12 border-2 border-slate-100 rounded-2xl font-bold outline-none shadow-sm font-bold" value={formData.aadhaar} onChange={e => setFormData({...formData, aadhaar: e.target.value.replace(/\D/g,'')})} maxLength={12} inputMode="numeric" />
-                                                {formData.aadhaar.length === 12 && ( <div className="absolute right-4 animate-view"><Icons.CheckCircle /></div> )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <button onClick={handleSave} disabled={isSaving} className="w-full py-6 bg-indigo-700 text-white rounded-[32px] font-black italic text-2xl shadow-2xl active:scale-95 border-b-8 border-indigo-900 mt-6 shadow-indigo-100 uppercase tracking-tighter transition-all font-black leading-none">{isSaving ? "SYNCING..." : "SAVE & SYNC"}</button>
                                 </div>
                             </div>
                         )}
+
                     </div>
                 </div>
             );
