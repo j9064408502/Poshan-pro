@@ -141,12 +141,12 @@
             const initialForm = {
                 firstName: '', lastName: '', gender: 'Male', birthDate: '', 
                 mobile: '', aadhaar: '', photoURL: '', 
-                poribarNo: '', relationToHead: 'Self', isFamilyHead: false, headId: ''
+                poribarNo: '', relationToHead: 'Self', isFamilyHead: false, headId: '',
+                maternalStatus: 'NA' // Added maternalStatus
             };
             const [formData, setFormData] = useState(initialForm);
 
             // --- Form Validation Check ---
-            // Checks if all required (*) fields are filled completely
             const isFormValid = !!(
                 formData.poribarNo?.toString().trim() && 
                 formData.firstName?.trim() && 
@@ -756,11 +756,13 @@
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
                                                 <label className="text-[10px] font-black italic text-slate-400 uppercase tracking-widest block mb-2">FIRST NAME *</label>
-                                                <input className="w-full p-4 border-[1.5px] border-[#94a3b8] rounded-[16px] font-bold italic outline-none shadow-sm uppercase text-slate-700" value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} />
+                                                {/* UPDATED: Removed uppercase class to allow Capital and Small letters */}
+                                                <input className="w-full p-4 border-[1.5px] border-[#94a3b8] rounded-[16px] font-bold italic outline-none shadow-sm text-slate-700" value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} />
                                             </div>
                                             <div>
                                                 <label className="text-[10px] font-black italic text-slate-400 uppercase tracking-widest block mb-2">LAST NAME *</label>
-                                                <input className="w-full p-4 border-[1.5px] border-[#94a3b8] rounded-[16px] font-bold italic outline-none shadow-sm uppercase text-slate-700" value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} />
+                                                {/* UPDATED: Removed uppercase class to allow Capital and Small letters */}
+                                                <input className="w-full p-4 border-[1.5px] border-[#94a3b8] rounded-[16px] font-bold italic outline-none shadow-sm text-slate-700" value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} />
                                             </div>
                                         </div>
                                         <div className="grid grid-cols-2 gap-4">
@@ -808,6 +810,25 @@
                                                     }} inputMode="numeric" maxLength={10} />
                                             </div>
                                         </div>
+
+                                        {/* UPDATED: NEW MATERNAL STATUS BOX */}
+                                        { ((formData.isFamilyHead && formData.gender === 'Female') || (formData.relationToHead === 'Wife' && formData.gender === 'Female')) && (
+                                            <div>
+                                                <label className="text-[10px] font-black italic text-slate-400 uppercase tracking-widest block mb-2">MATERNAL STATUS</label>
+                                                <div className="flex bg-[#eef2f6] p-1 rounded-[16px] gap-1 shadow-inner border-[1.5px] border-[#94a3b8]">
+                                                    {['NA', 'PREG', 'LACT'].map(status => {
+                                                        const isActive = formData.maternalStatus === status;
+                                                        return (
+                                                            <button key={status} type="button" onClick={() => setFormData({...formData, maternalStatus: status})} 
+                                                            className={`flex-1 py-3.5 rounded-[12px] font-black text-[10px] uppercase transition-all ${isActive ? 'bg-[#a65ebd] text-white border border-slate-600 shadow-md' : 'text-[#94a3b8] bg-transparent border border-transparent'}`}>
+                                                                {status}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
+
                                         <div>
                                             <label className="text-[10px] font-black italic text-slate-400 uppercase tracking-widest block mb-2">MOBILE NO</label>
                                             <div className="relative">
@@ -832,7 +853,6 @@
                                         </div>
                                     </div>
 
-                                    {/* UPDATED: Validation added. Button is grayed out if form is incomplete */}
                                     <button 
                                         onClick={handleSave} 
                                         disabled={isSaving || !isFormValid} 
@@ -955,8 +975,6 @@
                                                 const isOddLast = (relationOptions.length % 2 !== 0) && (index === relationOptions.length - 1);
                                                 return (
                                                     <button key={rel} onClick={() => {
-                                                            
-                                                            // UPDATED: Proper Gender logic based on Relation
                                                             let targetGender = 'Male';
                                                             if (['Wife', 'Mother', 'Mother in Law'].includes(rel)) {
                                                                 targetGender = 'Female';
