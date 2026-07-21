@@ -1,71 +1,1120 @@
-// --- Real-time Beneficiaries Counts Calculation based on Birth Date ---
-const beneficiaryCounts = useMemo(() => {
-    let preg = 0;
-    let lact = 0;
-    let c0_6m = 0;
-    let c6m_3y = 0;
-    let c3y_6y = 0;
-    let c0_6y_total = 0;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#ac5ebd">
+    <title>Poshan Pro Master</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
 
-    // For Children 0-6 breakdown stats by exact age and gender
-    let cat = {
-        '0-6m_m': 0, '0-6m_f': 0,
-        '6m-1y_m': 0, '6m-1y_f': 0,
-        '1y-2y_m': 0, '1y-2y_f': 0,
-        '2y-3y_m': 0, '2y-3y_f': 0,
-        '3y-4y_m': 0, '3y-4y_f': 0,
-        '4y-5y_m': 0, '4y-5y_f': 0,
-        '5y-6y_m': 0, '5y-6y_f': 0,
-        'total_m': 0, 'total_f': 0
-    };
+    <!-- App Manifest for PWA Native Install -->
+    <link rel="manifest" href="manifest.json">
 
-    members.forEach(m => {
-        if (m.maternalStatus === 'PREG') preg++;
-        if (m.maternalStatus === 'LACT') lact++;
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap');
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-view { animation: fadeIn 0.4s ease-out forwards; }
+    </style>
 
-        const months = calculateAgeInMonths(m.birthDate);
-        
-        // 0 মাস থেকে 6 বছর (72 মাস) পর্যন্ত শিশুদের হিসাব
-        if (months >= 0 && months <= 72) {
-            c0_6y_total++;
-            const isFemale = (m.gender === 'Female' || m.gender === 'Girl');
-            const isMale = (m.gender === 'Male' || m.gender === 'Boy');
+    <!-- Cloudflare CDNs for Ultra Stability -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.3/babel.min.js"></script>
+    
+    <!-- Standard Firebase SDK Compat CDN -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-900 select-none">
+    <div id="root"></div>
+    <div id="recaptcha-container"></div>
 
-            // ক্যাটাগরি অনুযায়ী জেন্ডার কাউন্ট
-            if (months <= 6) {
-                c0_6m++;
-                if (isMale) cat['0-6m_m']++; else if (isFemale) cat['0-6m_f']++;
-            } 
-            else if (months <= 12) {
-                c6m_3y++;
-                if (isMale) cat['6m-1y_m']++; else if (isFemale) cat['6m-1y_f']++;
-            } 
-            else if (months <= 24) {
-                c6m_3y++;
-                if (isMale) cat['1y-2y_m']++; else if (isFemale) cat['1y-2y_f']++;
-            } 
-            else if (months <= 36) {
-                c6m_3y++;
-                if (isMale) cat['2y-3y_m']++; else if (isFemale) cat['2y-3y_f']++;
-            } 
-            else if (months <= 48) {
-                c3y_6y++;
-                if (isMale) cat['3y-4y_m']++; else if (isFemale) cat['3y-4y_f']++;
-            } 
-            else if (months <= 60) {
-                c3y_6y++;
-                if (isMale) cat['4y-5y_m']++; else if (isFemale) cat['4y-5y_f']++;
-            } 
-            else if (months <= 72) {
-                c3y_6y++;
-                if (isMale) cat['5y-6y_m']++; else if (isFemale) cat['5y-6y_f']++;
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useRef } = React;
+
+        // --- STANDARD NAVIGATION ICONS ---
+        const Icons = {
+            User: ({s=20}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+            Plus: ({s=18, className=""}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="12" cy="5" x2="12" y2="19"/><line x1="5" cy="12" x2="19" y2="12"/></svg>,
+            Phone: ({s=18}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l2.27-2.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 .82 2.81.7A2 2 0 0 1 22 16.92z"/></svg>,
+            ArrowLeft: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>,
+            CurvedBack: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>,
+            Trash: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>,
+            Edit: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
+            Search: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" cy="21" x2="16.65" y2="16.65"/></svg>,
+            LogOut: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" cy="12" x2="9" y2="12"/></svg>,
+            Google: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>,
+            ChevronRight: ({className=""}) => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="9 18 15 12 9 6"/></svg>,
+            CheckCircle: ({s=18}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
+            CallLogo: ({s=18}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l2.27-2.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 .82 2.81.7A2 2 0 0 1 22 16.92z"/></svg>,
+            Settings: ({s=22}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
+            Export: ({s=20}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>,
+            Refresh: ({s=20}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>,
+            FormImagePlaceholder: () => (
+                <svg width="55" height="55" viewBox="0 0 24 24" fill="none" stroke="#f4b772" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="8" cy="9" r="3"/>
+                    <path d="M4 19c0-2.5 3-4 4-4s4 1.5 4 4"/>
+                    <rect x="12" y="5" width="10" height="10" rx="2"/>
+                    <path d="M12 11l2-2 3 3"/>
+                    <path d="M17 19v-5"/>
+                    <path d="M15 16l2-2 2 2"/>
+                </svg>
+            )
+        };
+
+        const BeneficiaryCard = ({ title, count, imgSrc }) => (
+            <div className="bg-white rounded-[24px] p-3.5 flex flex-col justify-between h-[155px] relative shadow-sm overflow-hidden">
+                <h3 className="text-[11px] font-black text-slate-700 uppercase leading-tight w-[80%] z-30 relative">{title}</h3>
+                <div className="bg-[#d45652] text-white font-black text-[13px] px-5 py-1.5 rounded-full w-fit mt-auto mb-1 z-30 relative shadow-sm">{count}</div>
+                <div className="absolute bottom-0 right-0 w-[70%] h-[75%] flex items-end justify-end pointer-events-none z-10">
+                    <div className="w-[120%] h-[120%] bg-[#fcf2f4] rounded-tl-full absolute bottom-[-20%] right-[-20%] z-0"></div>
+                    <img src={imgSrc} className="relative z-10 object-contain h-full max-h-[90px] mr-1.5 mb-1.5" alt={title} />
+                </div>
+            </div>
+        );
+
+        const AgeStatCard = ({ label, m, f, bg }) => (
+            <div className={`${bg} border-[2.5px] border-[#222222] rounded-[32px] p-2 py-3 flex flex-col items-center justify-center gap-1.5 shadow-md`}>
+                <div className="border border-white/70 text-white font-bold text-[11px] px-4 py-0.5 rounded-full whitespace-nowrap">{label}</div>
+                <div className="flex gap-2">
+                    <div className="border border-white/70 text-white font-bold text-[11px] px-3 py-0.5 rounded-full">M : {m}</div>
+                    <div className="border border-white/70 text-white font-bold text-[11px] px-3 py-0.5 rounded-full">F : {f}</div>
+                </div>
+            </div>
+        );
+
+        const safeLocalStorage = {
+            getItem: (key) => { try { return localStorage.getItem(key); } catch (e) { return null; } },
+            setItem: (key, value) => { try { localStorage.setItem(key, value); } catch (e) { } },
+            removeItem: (key) => { try { localStorage.removeItem(key); } catch (e) { } }
+        };
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCAxRX_R0KSFsDdU3oUmQgG8JwYZ6edg4k",
+            authDomain: "poshanpro-7816d.firebaseapp.com",
+            projectId: "poshanpro-7816d",
+            storageBucket: "poshanpro-7816d.firebasestorage.app",
+            messagingSenderId: "454892989088",
+            appId: "1:454892989088:web:6b6c2b03691c7f424a37c5",
+            measurementId: "G-9PK4W4424C"
+        };
+
+        let auth, db;
+        try {
+            if (typeof firebase !== 'undefined') {
+                if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+                auth = firebase.auth(); db = firebase.firestore();
+                auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
             }
+        } catch (e) { }
 
-            // সবার টোটাল কাউন্ট (0 মাস - 6 বছর)
-            if (isMale) cat['total_m']++;
-            if (isFemale) cat['total_f']++;
-        }
-    });
+        const appId = "poshan-pro-restore-v1";
 
-    return { preg, lact, c0_6m, c6m_3y, c3y_6y, c0_6y_total, cat };
-}, [members]);
+        const App = () => {
+            const [view, setView] = useState('login'); 
+            const [user, setUser] = useState(null);
+            const [isGuest, setIsGuest] = useState(false);
+            const [members, setMembers] = useState([]);
+            const [viewingHead, setViewingHead] = useState(null);
+            const [searchTerm, setSearchTerm] = useState('');
+            const [editingId, setEditingId] = useState(null);
+            const [isSaving, setIsSaving] = useState(false);
+            const fileInputRef = useRef(null);
+            const [refreshTick, setRefreshTick] = useState(0);
+
+            const [loginTab, setLoginTab] = useState('userpass'); 
+            const [isSignUp, setIsSignUp] = useState(false); 
+            const [username, setUsername] = useState('');
+            const [password, setPassword] = useState('');
+
+            const [phone, setPhone] = useState('');
+            const [otp, setOtp] = useState('');
+            const [otpSent, setOtpSent] = useState(false);
+            const [isBtnLoading, setIsBtnLoading] = useState(false);
+            const [confirmResult, setConfirmResult] = useState(null);
+
+            const initialForm = {
+                firstName: '', lastName: '', gender: 'Male', birthDate: '', 
+                mobile: '', aadhaar: '', photoURL: '', 
+                poribarNo: '', relationToHead: 'Self', isFamilyHead: false, headId: '',
+                maternalStatus: 'NA'
+            };
+            const [formData, setFormData] = useState(initialForm);
+
+            // --- Helper to parse age in months from DD/MM/YYYY ---
+            const calculateAgeInMonths = (birthDateStr) => {
+                if (!birthDateStr || birthDateStr.length < 10) return -1;
+                const parts = birthDateStr.split('/');
+                if (parts.length !== 3) return -1;
+                const [d, m, y] = parts.map(Number);
+                const bDate = new Date(y, m - 1, d);
+                const today = new Date();
+                if (isNaN(bDate.getTime())) return -1;
+
+                let years = today.getFullYear() - bDate.getFullYear();
+                let months = today.getMonth() - bDate.getMonth();
+                let totalMonths = years * 12 + months;
+                if (today.getDate() < bDate.getDate()) {
+                    totalMonths--;
+                }
+                return totalMonths;
+            };
+
+            // --- Real-time Beneficiaries Counts Calculation based on Birth Date ---
+            const beneficiaryCounts = useMemo(() => {
+                let preg = 0, lact = 0, c0_6m = 0, c6m_3y = 0, c3y_6y = 0, c0_6y_total = 0;
+                
+                // For Children 0-6 breakdown stats by exact age and gender
+                let cat = {
+                    '0-6m_m': 0, '0-6m_f': 0,
+                    '6m-1y_m': 0, '6m-1y_f': 0,
+                    '1y-2y_m': 0, '1y-2y_f': 0,
+                    '2y-3y_m': 0, '2y-3y_f': 0,
+                    '3y-4y_m': 0, '3y-4y_f': 0,
+                    '4y-5y_m': 0, '4y-5y_f': 0,
+                    '5y-6y_m': 0, '5y-6y_f': 0,
+                    'total_m': 0, 'total_f': 0
+                };
+
+                members.forEach(m => {
+                    if (m.maternalStatus === 'PREG') preg++;
+                    if (m.maternalStatus === 'LACT') lact++;
+
+                    const months = calculateAgeInMonths(m.birthDate);
+                    
+                    if (months >= 0 && months <= 72) {
+                        c0_6y_total++;
+                        const isFemale = (m.gender === 'Female' || m.gender === 'Girl');
+                        const isMale = (m.gender === 'Male' || m.gender === 'Boy');
+
+                        // Update Main Dashboard Stats correctly
+                        if (months <= 6) c0_6m++;
+                        else if (months <= 36) c6m_3y++;
+                        else if (months <= 72) c3y_6y++;
+
+                        // Update Detailed Category Stats
+                        if (months <= 6) {
+                            if (isMale) cat['0-6m_m']++; else if (isFemale) cat['0-6m_f']++;
+                        } else if (months <= 12) {
+                            if (isMale) cat['6m-1y_m']++; else if (isFemale) cat['6m-1y_f']++;
+                        } else if (months <= 24) {
+                            if (isMale) cat['1y-2y_m']++; else if (isFemale) cat['1y-2y_f']++;
+                        } else if (months <= 36) {
+                            if (isMale) cat['2y-3y_m']++; else if (isFemale) cat['2y-3y_f']++;
+                        } else if (months <= 48) {
+                            if (isMale) cat['3y-4y_m']++; else if (isFemale) cat['3y-4y_f']++;
+                        } else if (months <= 60) {
+                            if (isMale) cat['4y-5y_m']++; else if (isFemale) cat['4y-5y_f']++;
+                        } else if (months <= 72) {
+                            if (isMale) cat['5y-6y_m']++; else if (isFemale) cat['5y-6y_f']++;
+                        }
+
+                        if (isMale) cat['total_m']++;
+                        if (isFemale) cat['total_f']++;
+                    }
+                });
+
+                return { preg, lact, c0_6m, c6m_3y, c3y_6y, c0_6y_total, cat };
+            }, [members]);
+
+            const isFormValid = !!(
+                formData.poribarNo?.toString().trim() && 
+                formData.firstName?.trim() && 
+                formData.lastName?.trim() && 
+                formData.gender &&
+                formData.birthDate?.length === 10 && 
+                formData.aadhaar?.length === 12
+            );
+
+            useEffect(() => {
+                if (!auth) { setIsGuest(true); setView('dashboard'); return; }
+                auth.getRedirectResult().then(res => {
+                    if (res && res.user) { setUser(res.user); setIsGuest(false); setView('dashboard'); }
+                }).catch(e => {});
+
+                const unsub = auth.onAuthStateChanged(u => {
+                    if (u) { 
+                        setUser(u); 
+                        setIsGuest(false); 
+                        setView('dashboard'); 
+                    } else {
+                        if (safeLocalStorage.getItem('poshan_is_guest') === 'true') { 
+                            setIsGuest(true); 
+                            setView('dashboard'); 
+                        } else { 
+                            setView('login'); 
+                        }
+                    }
+                }, err => { setView('login'); });
+                return () => { if (unsub) unsub(); };
+            }, []);
+
+            const loadLocalDataFallback = () => {
+                const cached = safeLocalStorage.getItem('poshan_local_registry_members');
+                if (cached) { try { setMembers(JSON.parse(cached)); } catch(e) { setMembers([]); } } else { setMembers([]); }
+            };
+
+            const saveLocalData = (newMembers) => {
+                safeLocalStorage.setItem('poshan_local_registry_members', JSON.stringify(newMembers));
+                setMembers(newMembers);
+            };
+
+            useEffect(() => {
+                if (user && !isGuest && db) {
+                    try {
+                        const col = db.collection('artifacts').doc(appId).collection('users').doc(user.uid).collection('members');
+                        return col.onSnapshot(snap => { 
+                            const remoteData = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                            setMembers(remoteData);
+                            safeLocalStorage.setItem('poshan_local_registry_members', JSON.stringify(remoteData));
+                        }, err => { 
+                            loadLocalDataFallback(); 
+                        });
+                    } catch(e) { 
+                        loadLocalDataFallback(); 
+                    }
+                } else { 
+                    loadLocalDataFallback(); 
+                }
+            }, [user, isGuest, refreshTick]);
+
+            useEffect(() => {
+                if (viewingHead) { const freshHead = members.find(m => m.id === viewingHead.id); if (freshHead) setViewingHead(freshHead); }
+            }, [members]);
+
+            const handleUserPassAuth = async (e) => {
+                e.preventDefault();
+                if (!username.trim() || password.length < 6 || isBtnLoading || !auth) return;
+                setIsBtnLoading(true);
+                const email = username.trim().toLowerCase().includes('@') ? username.trim().toLowerCase() : `${username.trim().toLowerCase()}@poshanpro.com`;
+                try {
+                    if (isSignUp) { await auth.createUserWithEmailAndPassword(email, password); alert("Account Registry Success!"); } else { await auth.signInWithEmailAndPassword(email, password); }
+                    setIsGuest(false);
+                } catch (err) { alert("Error: " + err.message); } finally { setIsBtnLoading(false); }
+            };
+
+            const handleGoogleLogin = async () => {
+                if (!auth || isBtnLoading) return; setIsBtnLoading(true);
+                try { await auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider()); } catch (e) { setIsBtnLoading(false); }
+            };
+
+            const sendOTP = async () => {
+                if (!auth || phone.length < 10 || isBtnLoading) return; setIsBtnLoading(true);
+                try {
+                    if (window.recaptchaVerifier) window.recaptchaVerifier.clear();
+                    window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { 'size': 'invisible' });
+                    const result = await auth.signInWithPhoneNumber("+91" + phone, window.recaptchaVerifier);
+                    setConfirmResult(result); setOtpSent(true);
+                } catch (e) { alert("OTP Error."); } finally { setIsBtnLoading(false); }
+            };
+
+            const verifyOTP = async () => {
+                if (otp.length < 6 || isBtnLoading) return; setIsBtnLoading(true);
+                try { await confirmResult.confirm(otp); setIsGuest(false); } catch (e) { alert("Invalid Code!"); } finally { setIsBtnLoading(false); }
+            };
+
+            const skipLogin = () => { safeLocalStorage.setItem('poshan_is_guest', 'true'); setIsGuest(true); setView('dashboard'); };
+            const handleLogout = () => {
+                if (confirm("Logout?")) {
+                    if (auth) auth.signOut().catch(e => {});
+                    safeLocalStorage.removeItem('poshan_is_guest'); 
+                    setIsGuest(false); 
+                    setUser(null); 
+                    setView('login');
+                }
+            };
+
+            const stats = useMemo(() => [
+                { l: 'FAMILIES', v: members.filter(x => x.isFamilyHead).length, bgLeft: 'bg-[#faa000]', bgRight: 'bg-[#f4b938]', img: 'assets/p.png' },
+                { l: 'MEMBERS', v: members.length, bgLeft: 'bg-[#cbdcf6]', bgRight: 'bg-[#dbe5f7]', img: 'assets/fa.png' },
+                { l: 'FEMALE', v: members.filter(x => x.gender === 'Female').length, bgLeft: 'bg-[#fbd8df]', bgRight: 'bg-[#fae1e6]', img: 'assets/f.png' },
+                { l: 'MALE', v: members.filter(x => x.gender === 'Male').length, bgLeft: 'bg-[#abddf5]', bgRight: 'bg-[#c1ebfa]', img: 'assets/m.png' },
+                { l: 'GIRL', v: members.filter(x => x.gender === 'Girl').length, bgLeft: 'bg-[#f7c6db]', bgRight: 'bg-[#fad0e4]', img: 'assets/g.png' },
+                { l: 'BOY', v: members.filter(x => x.gender === 'Boy').length, bgLeft: 'bg-[#8bf1ef]', bgRight: 'bg-[#abf7f6]', img: 'assets/b.png' }
+            ], [members]);
+
+            const ageDisplay = useMemo(() => {
+                if (!formData.birthDate || formData.birthDate.length < 10) return '';
+                const parts = formData.birthDate.split('/'); if (parts.length !== 3) return '';
+                const [d, m, y] = parts.map(Number); const bDate = new Date(y, m-1, d); const today = new Date();
+                if (isNaN(bDate.getTime())) return '';
+                let years = today.getFullYear() - bDate.getFullYear(); let months = today.getMonth() - bDate.getMonth();
+                if (months < 0 || (months === 0 && today.getDate() < bDate.getDate())) { years--; months += 12; }
+                return `${years.toString().padStart(2, '0')}-${months.toString().padStart(2, '0')}`;
+            }, [formData.birthDate]);
+
+            const relationOptions = useMemo(() => {
+                if (!viewingHead) return ['Wife', 'Husband', 'Boy', 'Girl', 'Mother', 'Father', 'Mother in Law', 'Father in Law', 'Other'];
+                let rawList = viewingHead.gender === 'Male' ? 
+                    ['Wife', 'Boy', 'Girl', 'Mother', 'Father', 'Mother in Law', 'Father in Law', 'Other'] : 
+                    ['Husband', 'Boy', 'Girl', 'Mother', 'Father', 'Mother in Law', 'Father in Law', 'Other'];
+                const houseRels = members.filter(m => m.headId === viewingHead.id && !m.isFamilyHead).map(m => m.relationToHead);
+                return rawList.filter(r => {
+                    const singles = ['Wife', 'Husband', 'Mother', 'Father', 'Mother in Law', 'Father in Law'];
+                    if (singles.includes(r) && houseRels.includes(r)) return false; return true;
+                });
+            }, [viewingHead, members]);
+
+            const globalSearchResults = useMemo(() => {
+                if (!searchTerm.trim()) return [];
+                const query = searchTerm.toLowerCase().trim();
+                return members.filter(m => `${m.firstName} ${m.lastName}`.toLowerCase().includes(query) || m.poribarNo?.toLowerCase().includes(query));
+            }, [searchTerm, members]);
+
+            const handleSave = async () => {
+                if (isSaving || !isFormValid) return; 
+                setIsSaving(true);
+                const data = { ...formData, age: ageDisplay, updatedAt: Date.now() };
+
+                if (user && !isGuest && db) {
+                    try {
+                        const col = db.collection('artifacts').doc(appId).collection('users').doc(user.uid).collection('members');
+                        if (editingId) { 
+                            await col.doc(editingId).update(data); 
+                        } else { 
+                            await col.add({...data, createdAt: Date.now()}); 
+                        }
+                        
+                        const wasHead = data.isFamilyHead;
+                        setEditingId(null); 
+                        setFormData(initialForm); 
+                        setIsSaving(false);
+                        
+                        if (wasHead) setView('addHeadDashboard'); else setView('household');
+                    } catch (e) { 
+                        alert("Database error. Local saved."); 
+                        setIsSaving(false);
+                    }
+                } else {
+                    let localMembers = [...members];
+                    if (editingId) { localMembers = localMembers.map(m => m.id === editingId ? {...m, ...data} : m); } 
+                    else { localMembers.push({...data, id: 'local-' + Date.now(), createdAt: Date.now()}); }
+                    saveLocalData(localMembers); 
+                    
+                    const wasHead = data.isFamilyHead;
+                    setEditingId(null); 
+                    setFormData(initialForm);
+                    setIsSaving(false);
+                    
+                    if (wasHead) setView('addHeadDashboard'); else setView('household');
+                }
+            };
+
+            const handleDeleteFamily = async (headId) => {
+                if (!confirm("Delete family household?")) return;
+                if (!isGuest && user && db) {
+                    const toDelete = members.filter(m => m.id === headId || m.headId === headId);
+                    const batch = db.batch();
+                    const dbCol = db.collection('artifacts').doc(appId).collection('users').doc(user.uid).collection('members');
+                    toDelete.forEach(item => batch.delete(dbCol.doc(item.id))); await batch.commit();
+                } else { saveLocalData(members.filter(m => m.id !== headId && m.headId !== headId)); }
+                setView('addHeadDashboard');
+            };
+
+            const handleDeleteMember = async (targetId) => {
+                if (!confirm("Delete member?")) return;
+                if (!isGuest && user && db) { await db.collection('artifacts').doc(appId).collection('users').doc(user.uid).collection('members').doc(targetId).delete(); } 
+                else { saveLocalData(members.filter(m => m.id !== targetId)); }
+            };
+
+            const filteredHeads = members.filter(m => m.isFamilyHead).filter(h => `${h.firstName} ${h.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) || h.poribarNo?.includes(searchTerm));
+
+            if (view === 'login') return (
+                <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 animate-view">
+                    <div className="w-full max-w-sm bg-white p-8 rounded-[48px] shadow-2xl text-center space-y-6 border-b-8 border-indigo-100 leading-none">
+                        <div className="mx-auto w-16 h-16 bg-[#ac5ebd] text-white rounded-[22px] flex items-center justify-center shadow-xl rotate-3 text-2xl font-black italic">P</div>
+                        <div>
+                            <h2 className="text-2xl font-black italic tracking-tighter text-[#ac5ebd] uppercase">Poshan Pro</h2>
+                            <p className="text-slate-400 text-[10px] font-bold uppercase mt-1 tracking-widest leading-none">Family Registry</p>
+                        </div>
+                        <div className="flex bg-slate-100 p-1 rounded-2xl gap-1 text-[10px] font-bold">
+                            <button onClick={() => setLoginTab('userpass')} className={`flex-1 py-3 rounded-xl uppercase transition-all ${loginTab === 'userpass' ? 'bg-[#ac5ebd] text-white shadow-md' : 'text-slate-500'}`}>User/Pass</button>
+                            <button onClick={() => setLoginTab('otp')} className={`flex-1 py-3 rounded-xl uppercase transition-all ${loginTab === 'otp' ? 'bg-[#ac5ebd] text-white shadow-md' : 'text-slate-500'}`}>OTP</button>
+                            <button onClick={() => setLoginTab('google')} className={`flex-1 py-3 rounded-xl uppercase transition-all ${loginTab === 'google' ? 'bg-[#ac5ebd] text-white shadow-md' : 'text-slate-500'}`}>Google</button>
+                        </div>
+                        <div className="space-y-4">
+                            {loginTab === 'userpass' && (
+                                <form onSubmit={handleUserPassAuth} className="space-y-3">
+                                    <input type="text" placeholder="Username" className="w-full p-4 border-2 border-slate-100 rounded-2xl font-bold outline-none text-sm" value={username} onChange={e => setUsername(e.target.value)} required />
+                                    <input type="password" placeholder="Password (Min 6)" className="w-full p-4 border-2 border-slate-100 rounded-2xl font-bold outline-none text-sm" value={password} onChange={e => setPassword(e.target.value)} required />
+                                    <button type="submit" className="w-full py-4 bg-[#ac5ebd] text-white rounded-2xl font-black uppercase text-xs tracking-wider shadow-md">{isBtnLoading ? "Processing..." : (isSignUp ? "Sign Up" : "Login Now")}</button>
+                                    <button type="button" onClick={() => setIsSignUp(!isSignUp)} className="text-[10px] font-bold text-[#ac5ebd] underline block mx-auto mt-2">{isSignUp ? "Have account? Log In" : "New user? Sign Up"}</button>
+                                </form>
+                            )}
+                            {loginTab === 'otp' && (
+                                <div className="space-y-3">
+                                    {!otpSent ? (
+                                        <div className="space-y-3">
+                                            <div className="relative">
+                                                <div className="absolute left-5 top-1/2 -translate-y-1/2 font-bold text-slate-400 border-r pr-3">+91</div>
+                                                <input placeholder="Mobile Number" className="w-full p-4 pl-16 border-2 border-slate-100 rounded-2xl font-bold outline-none text-sm" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0,10))} inputMode="tel" />
+                                            </div>
+                                            <button onClick={sendOTP} className="w-full py-4 bg-[#ac5ebd] text-white rounded-2xl font-black uppercase text-xs tracking-wider shadow-md">Send OTP</button>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            <input placeholder="6-digit OTP" className="w-full p-4 border-2 border-slate-100 rounded-2xl font-black text-center tracking-[0.5em] text-md outline-none" value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0,6))} inputMode="numeric" />
+                                            <button onClick={verifyOTP} className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black uppercase text-xs tracking-wider shadow-md">Verify Code</button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                            {loginTab === 'google' && (
+                                <button onClick={handleGoogleLogin} className="w-full p-4 bg-white border-2 border-slate-100 rounded-2xl flex items-center justify-center gap-4 font-black uppercase text-xs hover:bg-slate-50"><Icons.Google /> Continue with Gmail</button>
+                            )}
+                            <div className="flex items-center gap-4 py-1"><div className="h-px flex-1 bg-slate-100"></div><span className="text-[10px] font-black text-slate-300 uppercase">OR</span><div className="h-px flex-1 bg-slate-100"></div></div>
+                            <button onClick={skipLogin} className="w-full p-2 text-[#8b5cf6] font-black uppercase text-[11px] tracking-[0.1em]">Skip Login &gt;</button>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            return (
+                <div className={`min-h-screen animate-view ${view === 'dashboard' ? 'bg-[#df5b86]' : (view === 'children0to6' ? 'bg-[#fde1e9]' : 'bg-[#e52165]')}`}>
+                    
+                    {/* Top Nav Bar ONLY renders when current view is 'dashboard' */}
+                    {view === 'dashboard' && (
+                        <nav className="sticky top-0 bg-[#ac5ebd] text-white p-4 pt-5 pb-5 flex items-center justify-between shadow-sm z-[60] rounded-b-[24px]">
+                            <div className="flex flex-col text-left font-black tracking-tighter leading-[0.9] uppercase">
+                                <span className="text-[20px] tracking-wider font-black font-sans">FAMELY</span>
+                                <span className="text-[18px] tracking-widest font-black font-sans ml-4">DATA</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button onClick={() => setView('dashboard')} className="w-10 h-10 border-[1.5px] border-white/80 rounded-full flex items-center justify-center shadow-sm active:scale-95 transition-transform bg-transparent">
+                                    <Icons.Export s={18} />
+                                </button>
+                                <button onClick={handleLogout} className="w-10 h-10 border-[1.5px] border-white/80 rounded-full flex items-center justify-center shadow-sm active:scale-95 transition-transform bg-transparent">
+                                    <Icons.Settings s={18} />
+                                </button>
+                            </div>
+                        </nav>
+                    )}
+
+                    {/* Standard Inner Pages Header */}
+                    {!['dashboard', 'addHeadDashboard', 'form', 'household', 'selectRelation', 'beneficiaries', 'children0to6'].includes(view) && (
+                        <nav className="sticky top-0 bg-indigo-700 text-white p-4 flex items-center justify-between shadow-xl z-[60]">
+                            <div className="flex items-center gap-3">
+                                <button onClick={() => {
+                                    if (view === 'selectRelation') setView('household');
+                                }} className="p-1 active:scale-75 transition-transform"><Icons.ArrowLeft /></button>
+                                <span className="text-xl font-black italic uppercase tracking-tighter leading-none">Poshan Pro</span>
+                            </div>
+                            <button onClick={handleLogout} className="p-2 bg-white/10 rounded-full active:bg-white/20 transition-colors"><Icons.LogOut /></button>
+                        </nav>
+                    )}
+
+                    <div className="max-w-md mx-auto space-y-6">
+                        
+                        {/* ======================================================== */}
+                        {/* DASHBOARD VIEW                                           */}
+                        {/* ======================================================== */}
+                        {view === 'dashboard' && (
+                            <div className="animate-view p-4 pb-10">
+                                
+                                <div className="border-[2.5px] border-dashed border-[#b66cbe] rounded-[36px] p-4 mb-6">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        {stats.map((s, i) => (
+                                            <div key={i} className="h-[80px] rounded-[40px] shadow-sm flex overflow-hidden active:scale-95 transition-all">
+                                                <div className={`${s.bgLeft} w-[55%] flex flex-col justify-center items-center pl-2 text-center`}>
+                                                    <p className="text-[10px] font-black text-[#5a5a5a] uppercase tracking-tight mb-0.5 leading-none">{s.l}</p>
+                                                    <p className="text-3xl font-black text-[#222222] leading-none">{s.v}</p>
+                                                </div>
+                                                <div className={`${s.bgRight} w-[45%] flex items-end justify-center overflow-hidden`}>
+                                                    <img src={s.img} alt={s.l} className="w-full h-[95%] object-contain object-bottom" />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="bg-white rounded-[44px] p-5 pb-6 shadow-sm border-none space-y-5 relative">
+                                    
+                                    <button onClick={() => setView('addHeadDashboard')} className="w-full h-[110px] bg-gradient-to-r from-[#4d0008] via-[#75000c] to-[#7f000b] rounded-[32px] flex items-center justify-between pl-4 pr-5 text-white font-black uppercase active:scale-95 shadow-md relative overflow-hidden">
+                                        <div className="flex items-center gap-2 h-full w-full">
+                                            <div className="h-full w-[75px] flex items-end justify-center shrink-0 -ml-1">
+                                                <img src="assets/h.png" alt="Grandpa Full" className="h-[95%] w-full object-contain object-bottom" />
+                                            </div>
+                                            <div className="flex flex-col text-left leading-[1.1] font-sans flex-1 ml-2">
+                                                <span className="text-[15px] font-black italic tracking-wide">VIEW</span>
+                                                <span className="text-[19px] font-black italic tracking-wide ml-6">FAMILY</span>
+                                                <span className="text-[19px] font-black italic tracking-wide ml-16">HEADS</span>
+                                            </div>
+                                        </div>
+                                        <div className="z-10 bg-[#8c1c24] p-2 rounded-[12px] shrink-0 shadow-inner">
+                                            <Icons.ChevronRight className="w-5 h-5 text-white/90" />
+                                        </div>
+                                    </button>
+
+                                    <div className="relative mt-2 h-[70px]">
+                                        <div className="absolute inset-0 bg-[#eaedf4] border-[1.5px] border-[#7d8cc4] rounded-full z-0 pointer-events-none"></div>
+                                        
+                                        {!searchTerm && (
+                                            <div className="absolute left-6 top-1/2 -translate-y-1/2 text-[#8a96b1] text-[13px] italic font-bold leading-tight pointer-events-none z-10">
+                                                Search Family ID,<br/>Head or Member name
+                                            </div>
+                                        )}
+                                        
+                                        <input 
+                                            className="w-full h-full pl-6 pr-14 font-bold outline-none text-[#5c688c] text-[13px] italic bg-transparent relative z-20" 
+                                            value={searchTerm} 
+                                            onChange={e => setSearchTerm(e.target.value)} 
+                                        />
+                                        
+                                        <div className="absolute right-5 top-1/2 -translate-y-1/2 text-[#5c688c] scale-110 z-20 pointer-events-none">
+                                            <Icons.Search />
+                                        </div>
+                                    </div>
+
+                                    {searchTerm.trim().length > 0 && (
+                                        <div className="relative bg-white border border-slate-200 shadow-2xl rounded-[28px] overflow-hidden z-50 p-2 max-h-[300px] overflow-y-auto no-scrollbar animate-view mt-2">
+                                            {globalSearchResults.length > 0 ? (
+                                                globalSearchResults.map(m => {
+                                                    const targetHead = m.isFamilyHead ? m : members.find(h => h.id === m.headId);
+                                                    return (
+                                                        <div key={m.id} onClick={() => { if(targetHead) { setViewingHead(targetHead); setSearchTerm(''); setView('household'); } }} className="flex items-center gap-3 p-3 hover:bg-slate-50 rounded-2xl cursor-pointer active:bg-slate-100 transition-colors border-b border-slate-50 last:border-0">
+                                                            <img src={m.photoURL || "https://cdn-icons-png.flaticon.com/512/3063/3063822.png"} className="w-10 h-10 rounded-xl object-cover bg-slate-50 shrink-0" />
+                                                            <div className="flex-1 min-w-0">
+                                                                <h5 className="font-black text-slate-800 uppercase text-xs truncate">{m.firstName} {m.lastName}</h5>
+                                                                <p className="text-[10px] font-bold text-slate-400 uppercase mt-0.5">ID: {m.poribarNo} • <span className={m.isFamilyHead ? 'text-rose-600 font-black' : 'text-indigo-600'}>{m.isFamilyHead ? 'Family Head' : m.relationToHead}</span></p>
+                                                            </div>
+                                                            <Icons.ChevronRight />
+                                                        </div>
+                                                    );
+                                                })
+                                            ) : ( <p className="text-center p-6 text-xs text-slate-400 font-bold uppercase tracking-wider">No Records Found</p> )}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="mt-8 mb-4">
+                                    <button onClick={() => setView('beneficiaries')} className="w-full bg-[#cd527a] border-[4px] border-[#e4658e] shadow-lg rounded-[48px] py-6 flex items-center justify-center gap-3 active:scale-95 transition-transform relative overflow-hidden">
+                                        <span className="text-white font-black italic text-[24px] uppercase tracking-wide leading-none" 
+                                              style={{ textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 3px 3px 0px rgba(0,0,0,0.4)' }}>
+                                            BENEFICIARIES
+                                        </span>
+                                        <div className="bg-[#de7498] rounded-[10px] p-1.5 text-white shadow-sm ml-2">
+                                            <Icons.ChevronRight className="w-5 h-5" />
+                                        </div>
+                                    </button>
+                                </div>
+                                
+                            </div>
+                        )}
+
+                        {/* ======================================================== */}
+                        {/* BENEFICIARIES DASHBOARD VIEW                             */}
+                        {/* ======================================================== */}
+                        {view === 'beneficiaries' && (
+                            <div className="min-h-screen bg-[#fde1e9] animate-view pb-20 -mt-6">
+                                
+                                <div className="bg-[#a65ebd] rounded-b-[32px] pt-12 pb-8 px-4 shadow-sm relative z-10 flex items-center justify-center">
+                                    <button onClick={() => setView('dashboard')} className="absolute left-4 border-[1.5px] border-white/60 p-2 rounded-[10px] text-white active:scale-75 transition-transform bg-transparent">
+                                        <Icons.CurvedBack />
+                                    </button>
+                                    <h1 className="text-white font-black italic text-[22px] tracking-wide leading-none drop-shadow-sm text-center mt-1">
+                                        Beneficiaries Des
+                                    </h1>
+                                </div>
+
+                                <div className="p-4 mt-1">
+                                    <div className="bg-[#d2bcc5] border-[2px] border-dashed border-[#dc8f9e] rounded-[36px] p-4 pb-6 shadow-sm">
+                                        
+                                        <div className="grid grid-cols-2 gap-3.5">
+                                            <BeneficiaryCard title="PREGNANT WOMEN" count={beneficiaryCounts.preg} imgSrc="assets/3.png" />
+                                            <BeneficiaryCard title="LACTATING MOTHERS" count={beneficiaryCounts.lact} imgSrc="assets/5.png" />
+                                            <BeneficiaryCard title="CHILDREN (0 - 6 MONTHS)" count={beneficiaryCounts.c0_6m} imgSrc="assets/1.png" />
+                                            <BeneficiaryCard title="CHILDREN (6 MON - 3 YEARS)" count={beneficiaryCounts.c6m_3y} imgSrc="assets/2.png" />
+                                        </div>
+
+                                        <div className="flex justify-center mt-4">
+                                            <div className="w-[50%]">
+                                                <BeneficiaryCard title="CHILDREN (3 - 6 YEARS)" count={beneficiaryCounts.c3y_6y} imgSrc="assets/4.png" />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <button onClick={() => setView('children0to6')} className="mt-5 w-full bg-white border-[3px] border-[#8a2f42] rounded-full py-2.5 px-6 flex items-center justify-between shadow-sm relative h-[95px] active:scale-95 transition-transform text-left">
+                                        <div className="absolute inset-0 overflow-hidden rounded-full z-0 pointer-events-none">
+                                            <div className="w-[110%] h-[150%] bg-[#fcf2f4] rounded-tr-[50px] rounded-br-[20px] absolute bottom-[-10%] left-[-20%]"></div>
+                                        </div>
+                                        
+                                        <div className="flex gap-1 items-end h-full w-[65%] relative z-10 pointer-events-none">
+                                            <img src="assets/1.png" className="h-[50px] relative z-10 -ml-2 object-contain" />
+                                            <img src="assets/2.png" className="h-[65px] relative z-10 -ml-3 object-contain" />
+                                            <img src="assets/4.png" className="h-[80px] relative z-10 -ml-4 object-contain" />
+                                        </div>
+                                        
+                                        <div className="flex flex-col items-end justify-center z-30 relative pointer-events-none pr-1">
+                                            <h3 className="text-[12px] font-black text-[#5a5a5a] uppercase text-right leading-tight mb-1.5">CHILDREN<br/>0M - 6Y</h3>
+                                            <div className="bg-[#d45652] text-white font-black text-[13px] px-6 py-1.5 rounded-full shadow-md w-fit leading-none shrink-0">{beneficiaryCounts.c0_6y_total}</div>
+                                        </div>
+                                    </button>
+                                    
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ======================================================== */}
+                        {/* CHILDREN 0M - 6Y DETAILS PAGE                            */}
+                        {/* ======================================================== */}
+                        {view === 'children0to6' && (
+                            <div className="min-h-screen bg-[#fde1e9] animate-view -mt-6">
+                                
+                                <div className="bg-[#a65ebd] rounded-b-[24px] pt-10 pb-6 px-5 shadow-sm relative z-10">
+                                    <div className="flex justify-between items-center mb-6">
+                                        <button onClick={() => setView('beneficiaries')} className="border-[1.5px] border-white/60 p-1.5 rounded-[10px] text-white active:scale-75 transition-transform bg-transparent">
+                                            <Icons.CurvedBack />
+                                        </button>
+                                        <h1 className="text-white font-black italic text-[16px] uppercase tracking-widest leading-none drop-shadow-sm text-center">
+                                            CHILDREN ( 0M - 6Y )
+                                        </h1>
+                                        <button onClick={() => setRefreshTick(t => t + 1)} className="border-[1.5px] border-white/60 p-1.5 rounded-[10px] text-white active:bg-white/20 transition-colors bg-transparent">
+                                            <Icons.Refresh s={20} />
+                                        </button>
+                                    </div>
+
+                                    {/* Grid Container with Dynamic Counts */}
+                                    <div className="grid grid-cols-2 gap-3 mb-4">
+                                        <AgeStatCard 
+                                            label={`0M-6M : ${beneficiaryCounts.cat['0-6m_m'] + beneficiaryCounts.cat['0-6m_f']}`} 
+                                            m={beneficiaryCounts.cat['0-6m_m']} 
+                                            f={beneficiaryCounts.cat['0-6m_f']} 
+                                            bg="bg-[#ce8590]" 
+                                        />
+                                        <AgeStatCard 
+                                            label={`6M-1Y : ${beneficiaryCounts.cat['6m-1y_m'] + beneficiaryCounts.cat['6m-1y_f']}`} 
+                                            m={beneficiaryCounts.cat['6m-1y_m']} 
+                                            f={beneficiaryCounts.cat['6m-1y_f']} 
+                                            bg="bg-[#4a5568]" 
+                                        />
+                                        <AgeStatCard 
+                                            label={`1Y-2Y : ${beneficiaryCounts.cat['1y-2y_m'] + beneficiaryCounts.cat['1y-2y_f']}`} 
+                                            m={beneficiaryCounts.cat['1y-2y_m']} 
+                                            f={beneficiaryCounts.cat['1y-2y_f']} 
+                                            bg="bg-[#f06e9c]" 
+                                        />
+                                        <AgeStatCard 
+                                            label={`2Y-3Y : ${beneficiaryCounts.cat['2y-3y_m'] + beneficiaryCounts.cat['2y-3y_f']}`} 
+                                            m={beneficiaryCounts.cat['2y-3y_m']} 
+                                            f={beneficiaryCounts.cat['2y-3y_f']} 
+                                            bg="bg-[#0273b5]" 
+                                        />
+                                        <AgeStatCard 
+                                            label={`3Y-4Y : ${beneficiaryCounts.cat['3y-4y_m'] + beneficiaryCounts.cat['3y-4y_f']}`} 
+                                            m={beneficiaryCounts.cat['3y-4y_m']} 
+                                            f={beneficiaryCounts.cat['3y-4y_f']} 
+                                            bg="bg-[#b58b00]" 
+                                        />
+                                        <AgeStatCard 
+                                            label={`4Y-5Y : ${beneficiaryCounts.cat['4y-5y_m'] + beneficiaryCounts.cat['4y-5y_f']}`} 
+                                            m={beneficiaryCounts.cat['4y-5y_m']} 
+                                            f={beneficiaryCounts.cat['4y-5y_f']} 
+                                            bg="bg-[#1a209e]" 
+                                        />
+                                        <AgeStatCard 
+                                            label={`5Y-6Y : ${beneficiaryCounts.cat['5y-6y_m'] + beneficiaryCounts.cat['5y-6y_f']}`} 
+                                            m={beneficiaryCounts.cat['5y-6y_m']} 
+                                            f={beneficiaryCounts.cat['5y-6y_f']} 
+                                            bg="bg-[#9c183b]" 
+                                        />
+                                        <AgeStatCard 
+                                            label={`TOTAL : ${beneficiaryCounts.cat['total_m'] + beneficiaryCounts.cat['total_f']}`} 
+                                            m={beneficiaryCounts.cat['total_m']} 
+                                            f={beneficiaryCounts.cat['total_f']} 
+                                            bg="bg-[#d69900]" 
+                                        />
+                                    </div>
+
+                                    <div className="flex justify-center mt-6 mb-2">
+                                        <button className="border-[1.5px] border-white text-white px-10 py-0.5 rounded-[10px] text-xl font-light active:bg-white/20 transition-colors leading-none shadow-sm">
+                                            +
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="p-4 pt-5 pb-20 space-y-4">
+                                    {members.filter(m => {
+                                        const months = calculateAgeInMonths(m.birthDate);
+                                        return months >= 0 && months <= 72;
+                                    }).map(m => {
+                                        const displayAge = m.age ? (m.age.includes('-') ? `${m.age.split('-')[0]}Y - ${m.age.split('-')[1]}M` : m.age) : '00Y - 00M';
+                                        return (
+                                            <div key={m.id} className="bg-white border-[2.5px] border-[#f5c2c7] rounded-[32px] p-4 flex items-center gap-4 shadow-sm relative">
+                                                <div className="w-[85px] h-[85px] rounded-[24px] bg-[#f8f9fa] overflow-hidden shrink-0 border-[1.5px] border-slate-100 flex items-center justify-center p-1">
+                                                    <img src={m.photoURL || "https://cdn-icons-png.flaticon.com/512/3063/3063822.png"} alt="icon" className="w-full h-full object-cover rounded-[18px]" />
+                                                </div>
+                                                <div className="flex-1 flex flex-col justify-center min-w-0">
+                                                    <div className="flex gap-1.5 mb-2">
+                                                        <span className="bg-[#e4e8fc] text-[#6d79c6] text-[10px] font-black px-2 py-0.5 rounded uppercase leading-tight">ID: {m.poribarNo || '1'}</span>
+                                                        <span className="bg-[#fce4e8] text-[#c75e71] text-[10px] font-black px-2 py-0.5 rounded uppercase italic leading-tight">{m.gender}</span>
+                                                        <span className="bg-[#4d5b69] text-white text-[10px] font-black px-2.5 py-0.5 rounded uppercase leading-tight">{displayAge}</span>
+                                                    </div>
+                                                    <h4 className="font-black text-[#222222] text-[18px] uppercase leading-none mb-3 truncate">{m.firstName} {m.lastName}</h4>
+                                                    <div className="flex gap-2">
+                                                        <span className="border-[1.5px] border-slate-200 text-slate-400 text-[9px] font-black px-3 py-1 rounded-full uppercase leading-none">FATHER NAME</span>
+                                                        <span className="border-[1.5px] border-slate-200 text-slate-400 text-[9px] font-black px-3 py-1 rounded-full uppercase leading-none">MOTHER NAME</span>
+                                                    </div>
+                                                </div>
+                                                {m.mobile ? (
+                                                    <a href={`tel:${m.mobile}`} className="w-[50px] h-[50px] bg-[#0bb37a] text-white rounded-[16px] flex items-center justify-center shrink-0 shadow-md active:scale-90 transition-transform">
+                                                        <Icons.Phone s={24} />
+                                                    </a>
+                                                ) : (
+                                                    <div className="w-[50px] h-[50px] bg-slate-200 text-slate-400 rounded-[16px] flex items-center justify-center shrink-0 shadow-sm cursor-not-allowed">
+                                                        <Icons.Phone s={24} />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+
+                                    {members.filter(m => {
+                                        const months = calculateAgeInMonths(m.birthDate);
+                                        return months >= 0 && months <= 72;
+                                    }).length === 0 && (
+                                        <p className="text-center text-white font-bold py-10 uppercase text-sm tracking-wider">No Children (0M - 6Y) Found in Records</p>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ======================================================== */}
+                        {/* HEAD MANAGEMENT VIEW                                     */}
+                        {/* ======================================================== */}
+                        {view === 'addHeadDashboard' && (
+                            <div className="min-h-screen bg-[#fde1e9] animate-view pb-20 -mt-6">
+                                <div className="bg-[#a65ebd] rounded-b-[24px] pt-8 pb-6 px-4 shadow-sm relative z-10">
+                                    <div className="flex justify-between items-center mb-5">
+                                        <button onClick={() => setView('dashboard')} className="text-white border-[1.5px] border-white/60 p-1.5 rounded-[8px] active:scale-75 transition-transform bg-white/5">
+                                            <Icons.CurvedBack />
+                                        </button>
+                                        <div className="border-[1.5px] border-[#ccaad6] px-4 py-2 mx-3 flex-1 flex justify-center items-center">
+                                            <h1 className="text-white font-black italic uppercase text-[15px] tracking-widest leading-none drop-shadow-sm mt-0.5">Head Management</h1>
+                                        </div>
+                                        <button onClick={() => setRefreshTick(t => t + 1)} className="border-[1.5px] border-[#ccaad6] p-1.5 rounded-[8px] text-white bg-white/5 active:bg-white/20 transition-colors">
+                                            <Icons.Refresh s={20} />
+                                        </button>
+                                    </div>
+                                    <button onClick={() => {setFormData({...initialForm, isFamilyHead: true, relationToHead: 'Self'}); setEditingId(null); setView('form');}} className="w-full border-[1.5px] border-[#ccaad6] text-white rounded-[10px] py-3 text-[14px] font-bold uppercase tracking-wide flex items-center justify-center gap-2 bg-transparent active:bg-white/10 transition-colors">
+                                        New Head Registration <Icons.Plus s={22} />
+                                    </button>
+                                </div>
+                                <div className="p-4 space-y-3 mt-1">
+                                    {filteredHeads.map(h => {
+                                        const displayAge = h.age ? (h.age.includes('-') ? `${h.age.split('-')[0]}Y - ${h.age.split('-')[1]}M` : h.age) : '00Y - 00M';
+                                        return (
+                                        <div key={h.id} className="bg-white p-3 rounded-[24px] border-[1.5px] border-[#ffb3c6] flex items-center gap-3 shadow-sm active:scale-95 transition-transform">
+                                            <div onClick={() => {setViewingHead(h); setView('household');}} className="w-[65px] h-[65px] bg-[#f8f9fa] rounded-[16px] border-[1.5px] border-slate-100 shrink-0 flex items-center justify-center overflow-hidden cursor-pointer">
+                                                <img src={h.photoURL || "https://cdn-icons-png.flaticon.com/512/3063/3063822.png"} className="w-full h-full object-cover" />
+                                            </div>
+                                            <div onClick={() => {setViewingHead(h); setView('household');}} className="flex-1 min-w-0 cursor-pointer py-1">
+                                                <div className="flex items-center gap-1.5 mb-2">
+                                                    <span className="text-[9px] font-black bg-[#e6ddf7] text-[#8363c4] px-1.5 py-0.5 rounded uppercase tracking-wider">ID: {h.poribarNo || '1'}</span>
+                                                    <span className="text-[9px] font-black bg-[#ffe1e6] text-[#c96272] px-1.5 py-0.5 rounded uppercase italic">Head</span>
+                                                    <span className="text-[9px] font-black bg-[#5a6270] text-white px-2 py-0.5 rounded uppercase tracking-wider">{displayAge}</span>
+                                                </div>
+                                                <h4 className="font-black uppercase text-[#222222] text-[16px] truncate leading-none mt-1">{h.firstName} {h.lastName}</h4>
+                                            </div>
+                                            <a href={`tel:${h.mobile || ''}`} onClick={(e) => {if(!h.mobile) { e.preventDefault(); alert('No mobile number found'); }}} className="w-[45px] h-[45px] bg-[#0bb37a] text-white rounded-[14px] shadow-sm flex items-center justify-center active:scale-90 transition-transform shrink-0">
+                                                <Icons.Phone s={22} />
+                                            </a>
+                                        </div>
+                                    )})}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ======================================================== */}
+                        {/* REGISTRATION FORM VIEW                                   */}
+                        {/* ======================================================== */}
+                        {view === 'form' && (
+                            <div className="min-h-screen bg-[#fde1e9] animate-view pb-16 -mt-6">
+                                <div className="bg-[#a65ebd] rounded-b-[24px] pt-8 pb-8 px-4 shadow-sm relative z-10">
+                                    <div className="flex justify-between items-center">
+                                        <button onClick={() => setView(formData.isFamilyHead ? 'addHeadDashboard' : 'household')} className="border-[1.5px] border-white/60 p-2 rounded-[10px] text-white active:scale-75 transition-transform bg-transparent">
+                                            <Icons.CurvedBack />
+                                        </button>
+                                        <h1 className="text-white font-black italic uppercase text-[17px] tracking-wider leading-none text-center flex-1 drop-shadow-sm">
+                                            Registration Form
+                                        </h1>
+                                        <button onClick={() => setRefreshTick(t => t + 1)} className="border-[1.5px] border-white/60 p-2 rounded-[10px] text-white active:bg-white/20 transition-colors bg-transparent">
+                                            <Icons.Refresh s={20} />
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="p-5 space-y-6">
+                                    <div className="flex items-center gap-4">
+                                        <div onClick={() => fileInputRef.current?.click()} className="w-[125px] h-[125px] bg-white border-[3px] border-[#ef5f8b] rounded-[20px] shadow-sm flex items-center justify-center overflow-hidden relative active:scale-95 transition-transform shrink-0">
+                                            {formData.photoURL ? <img src={formData.photoURL} className="w-full h-full object-cover" /> : <Icons.FormImagePlaceholder />}
+                                            <input type="file" ref={fileInputRef} onChange={(e) => {
+                                                const f = e.target.files[0]; if(!f) return;
+                                                const r = new FileReader(); r.onload = (ev) => setFormData({...formData, photoURL: ev.target.result}); r.readAsDataURL(f);
+                                            }} className="hidden" accept="image/*" />
+                                        </div>
+                                        <div className="flex-1 space-y-1.5">
+                                            <label className="text-[12px] font-black text-[#ef5f8b] uppercase tracking-wide block mb-1">FAMILY ID*</label>
+                                            <input placeholder="FAMILY CODE" className="w-full py-4 px-5 border-[1.5px] border-[#94a3b8] rounded-[18px] font-bold text-slate-700 outline-none shadow-sm uppercase placeholder-slate-400 bg-white" value={formData.poribarNo} onChange={e => setFormData({...formData, poribarNo: e.target.value.replace(/\D/g, '')})} inputMode="numeric" disabled={!formData.isFamilyHead} />
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white p-5 rounded-[28px] border-[2.5px] border-[#ef5f8b] shadow-sm space-y-5">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="text-[10px] font-black italic text-slate-400 uppercase tracking-widest block mb-2">FIRST NAME *</label>
+                                                <input className="w-full p-4 border-[1.5px] border-[#94a3b8] rounded-[16px] font-bold italic outline-none shadow-sm text-slate-700" value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-black italic text-slate-400 uppercase tracking-widest block mb-2">LAST NAME *</label>
+                                                <input className="w-full p-4 border-[1.5px] border-[#94a3b8] rounded-[16px] font-bold italic outline-none shadow-sm text-slate-700" value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} />
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="text-[10px] font-black italic text-slate-400 uppercase tracking-widest block mb-2">GENDER *</label>
+                                                <div className="flex bg-[#eef2f6] p-1 rounded-[16px] gap-1 shadow-inner border-[1.5px] border-[#94a3b8]">
+                                                    {['Boy', 'Girl'].includes(formData.relationToHead) ? (
+                                                        ['Boy', 'Girl'].map(g => {
+                                                            const isLocked = (formData.relationToHead === 'Boy' && g === 'Girl') || (formData.relationToHead === 'Girl' && g === 'Boy');
+                                                            const isActive = formData.gender === g;
+                                                            return (
+                                                                <button key={g} type="button" disabled={isLocked} onClick={() => setFormData({...formData, gender: g})} 
+                                                                className={`flex-1 py-3.5 rounded-[12px] font-black text-[10px] uppercase transition-all ${isLocked ? 'opacity-20 cursor-not-allowed' : ''} ${isActive ? 'bg-[#a65ebd] text-white border border-slate-600 shadow-md' : 'text-[#94a3b8] bg-transparent border border-transparent'}`}>
+                                                                    {g}
+                                                                </button>
+                                                            );
+                                                        })
+                                                    ) : (
+                                                        ['Male', 'Female'].map(g => {
+                                                            const isLocked = !formData.isFamilyHead && (
+                                                                (['Wife', 'Mother', 'Mother in Law'].includes(formData.relationToHead) && g === 'Male') ||
+                                                                (['Husband', 'Father', 'Father in Law'].includes(formData.relationToHead) && g === 'Female')
+                                                            );
+                                                            const isActive = formData.gender === g;
+                                                            return (
+                                                                <button key={g} type="button" disabled={isLocked} onClick={() => setFormData({...formData, gender: g})} 
+                                                                className={`flex-1 py-3.5 rounded-[12px] font-black text-[10px] uppercase transition-all ${isLocked ? 'opacity-20 cursor-not-allowed' : ''} ${isActive ? 'bg-[#a65ebd] text-white border border-slate-600 shadow-md' : 'text-[#94a3b8] bg-transparent border border-transparent'}`}>
+                                                                    {g}
+                                                                </button>
+                                                            );
+                                                        })
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="relative">
+                                                <label className="text-[10px] font-black italic text-slate-400 uppercase tracking-widest block mb-2">BIRTH DATE *</label>
+                                                <input placeholder="DD/MM/YYYY" className="w-full p-4 border-[1.5px] border-[#94a3b8] rounded-[16px] font-bold shadow-sm outline-none placeholder-slate-400 text-slate-700" value={formData.birthDate} onChange={e => {
+                                                        let val = e.target.value.replace(/\D/g, ''); let len = val.length;
+                                                        if (len >= 2) { let dd = parseInt(val.slice(0, 2)); if (dd > 31 || dd === 0) return; }
+                                                        if (len >= 4) { let mm = parseInt(val.slice(2, 4)); if (mm > 12 || mm === 0) return; }
+                                                        if (len === 8) { let yyyy = parseInt(val.slice(4, 8)); if (yyyy > 2026) return; }
+                                                        if (len > 8) val = val.slice(0, 8);
+                                                        let formatted = len <= 2 ? val : len <= 4 ? `${val.slice(0, 2)}/${val.slice(2)}` : `${val.slice(0, 2)}/${val.slice(2, 4)}/${val.slice(4, 8)}`;
+                                                        setFormData({...formData, birthDate: formatted});
+                                                    }} inputMode="numeric" maxLength={10} />
+                                            </div>
+                                        </div>
+
+                                        { ((formData.isFamilyHead && formData.gender === 'Female') || (formData.relationToHead === 'Wife' && formData.gender === 'Female')) && (
+                                            <div>
+                                                <label className="text-[10px] font-black italic text-slate-400 uppercase tracking-widest block mb-2">MATERNAL STATUS</label>
+                                                <div className="flex bg-[#eef2f6] p-1 rounded-[16px] gap-1 shadow-inner border-[1.5px] border-[#94a3b8]">
+                                                    {['NA', 'PREG', 'LACT'].map(status => {
+                                                        const isActive = formData.maternalStatus === status;
+                                                        return (
+                                                            <button key={status} type="button" onClick={() => setFormData({...formData, maternalStatus: status})} 
+                                                            className={`flex-1 py-3.5 rounded-[12px] font-black text-[10px] uppercase transition-all ${isActive ? 'bg-[#a65ebd] text-white border border-slate-600 shadow-md' : 'text-[#94a3b8] bg-transparent border border-transparent'}`}>
+                                                                {status}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <div>
+                                            <label className="text-[10px] font-black italic text-slate-400 uppercase tracking-widest block mb-2">MOBILE NO</label>
+                                            <div className="relative">
+                                                <input className="w-full p-4 pr-12 border-[1.5px] border-[#94a3b8] rounded-[16px] font-bold outline-none shadow-sm text-slate-700" value={formData.mobile} onChange={e => setFormData({...formData, mobile: e.target.value.replace(/\D/g,'')})} maxLength={10} inputMode="numeric" />
+                                                {formData.mobile.length === 10 && (
+                                                    <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                                                        <Icons.CheckCircle s={22} />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-black italic text-slate-400 uppercase tracking-widest block mb-2">AADHAAR NO*</label>
+                                            <div className="relative">
+                                                <input className="w-full p-4 pr-12 border-[1.5px] border-[#94a3b8] rounded-[16px] font-bold outline-none shadow-sm text-slate-700" value={formData.aadhaar} onChange={e => setFormData({...formData, aadhaar: e.target.value.replace(/\D/g,'')})} maxLength={12} inputMode="numeric" />
+                                                {formData.aadhaar.length === 12 && (
+                                                    <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                                                        <Icons.CheckCircle s={22} />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <button 
+                                        onClick={handleSave} 
+                                        disabled={isSaving || !isFormValid} 
+                                        className={`w-full py-[18px] text-white rounded-full font-black italic text-[22px] shadow-lg active:scale-95 border-[3px] mt-2 uppercase tracking-widest transition-all leading-none drop-shadow-md ${
+                                            (!isFormValid || isSaving) 
+                                            ? 'bg-slate-400 opacity-60 border-slate-500 cursor-not-allowed' 
+                                            : 'bg-[#ef5f8b] border-[#312e81]'
+                                        }`}>
+                                        {isSaving ? "SYNCING..." : "SAVE & SYNC"}
+                                    </button>
+                                    
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ======================================================== */}
+                        {/* HOUSEHOLD VIEW                                           */}
+                        {/* ======================================================== */}
+                        {view === 'household' && viewingHead && (
+                            <div className="min-h-screen bg-[#fde1e9] animate-view pb-20 -mt-6">
+                                <div className="bg-[#a65ebd] rounded-b-[24px] pt-8 pb-8 px-4 shadow-sm relative z-10">
+                                    <div className="flex justify-between items-center mb-1">
+                                        <button onClick={() => setView('addHeadDashboard')} className="border-[1.5px] border-white/60 p-2 rounded-[10px] text-white active:scale-75 transition-transform bg-transparent">
+                                            <Icons.CurvedBack />
+                                        </button>
+                                        <h1 className="text-white font-black italic uppercase text-[17px] tracking-widest leading-none text-center flex-1 drop-shadow-sm">
+                                            HEAD FAMILY DETAILS
+                                        </h1>
+                                        <button onClick={() => setRefreshTick(t => t + 1)} className="border-[1.5px] border-white/60 p-2 rounded-[10px] text-white active:bg-white/20 transition-colors bg-transparent">
+                                            <Icons.Refresh s={20} />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="p-4 space-y-6">
+                                    <div className="bg-[#9d5baf] p-4 rounded-[28px] shadow-md relative">
+                                        <div className="flex justify-between items-start mb-4">
+                                            <span className="bg-[#f2eff4] text-[#ef5f8b] text-[10px] font-black italic px-4 py-1.5 rounded-full shadow-sm">
+                                                Head Profile
+                                            </span>
+                                            <span className="bg-[#d49bb4] border-[1.5px] border-black text-black text-[11px] font-black px-4 py-1.5 rounded-full tracking-widest">
+                                                ID: {viewingHead.poribarNo || '1'}
+                                            </span>
+                                        </div>
+
+                                        <div className="flex gap-4 items-center">
+                                            <div className="w-[90px] h-[90px] rounded-[24px] border-[3px] border-[#293260] bg-white overflow-hidden shrink-0 flex items-center justify-center shadow-sm">
+                                                <img src={viewingHead.photoURL || "https://cdn-icons-png.flaticon.com/512/3063/3063822.png"} className="w-[95%] h-[95%] rounded-[18px] object-cover bg-slate-100" />
+                                            </div>
+                                            <div className="flex flex-col gap-2.5">
+                                                <div className="bg-white/20 px-3.5 py-1.5 rounded-[8px] inline-block w-fit shadow-sm">
+                                                    <h3 className="text-[17px] font-black uppercase text-white leading-none tracking-wide">{viewingHead.firstName} {viewingHead.lastName}</h3>
+                                                </div>
+                                                <div className="bg-white/20 px-3.5 py-1.5 rounded-[8px] inline-block w-fit shadow-sm">
+                                                    <p className="text-[11px] font-black italic text-white uppercase leading-none tracking-widest">
+                                                        {viewingHead.age ? (viewingHead.age.includes('-') ? `${viewingHead.age.split('-')[0]}Y - ${viewingHead.age.split('-')[1]}M` : viewingHead.age) : '00Y - 00M'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex justify-end gap-3 mt-5">
+                                            <button onClick={() => {setEditingId(viewingHead.id); setFormData(viewingHead); setView('form');}} className="bg-white border-[1.5px] border-black text-[#4f46e5] px-5 py-2.5 rounded-full font-black uppercase text-[12px] shadow-sm active:scale-95 transition-transform tracking-wider">
+                                                EDIT PROFILE
+                                            </button>
+                                            <button onClick={() => handleDeleteFamily(viewingHead.id)} className="bg-[#ef5f8b] w-[42px] h-[42px] flex items-center justify-center rounded-[12px] text-white shadow-sm active:scale-95 transition-all">
+                                                <Icons.Trash />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        {members.filter(m => m.headId === viewingHead.id && !m.isFamilyHead).map(m => (
+                                            <div key={m.id} className="bg-white p-4 rounded-[32px] border-[1.5px] border-[#ffb3c6] flex items-center gap-4 shadow-sm active:scale-95 transition-all">
+                                                <img src={m.photoURL || "https://cdn-icons-png.flaticon.com/512/3063/3063822.png"} className="w-14 h-14 rounded-2xl object-cover border" />
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2 mb-1.5">
+                                                        <p className="text-[10px] font-black text-[#ef5f8b] uppercase italic leading-none tracking-widest">{m.relationToHead}</p>
+                                                        {m.mobile && ( <a href={`tel:${m.mobile}`} className="p-1 bg-[#fde1e9] text-[#ef5f8b] rounded-full flex items-center justify-center active:scale-75"><Icons.CallLogo s={10} /></a> )}
+                                                    </div>
+                                                    <h5 className="font-black uppercase text-base leading-none text-[#222222] truncate">{m.firstName} {m.lastName}</h5>
+                                                    <p className="text-[10px] font-bold text-slate-500 mt-1.5 uppercase tracking-tighter leading-none">{m.age} • {m.gender}</p>
+                                                </div>
+                                                <div className="flex items-center gap-1.5 leading-none">
+                                                    <button onClick={() => {setEditingId(m.id); setFormData(m); setView('form');}} className="p-3 bg-indigo-50 text-indigo-400 rounded-2xl active:text-indigo-600 transition-colors leading-none"><Icons.Edit /></button>
+                                                    <button onClick={() => handleDeleteMember(m.id)} className="p-3 bg-rose-50 text-rose-400 rounded-2xl active:text-rose-600 transition-colors leading-none"><Icons.Trash /></button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <button onClick={() => setView('selectRelation')} className="w-full border-[2px] border-dashed border-[#ef5f8b] py-14 px-6 rounded-[32px] flex flex-col items-center justify-center gap-4 bg-transparent active:bg-white/20 transition-all text-[#ef5f8b]">
+                                        <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm border-[1px] border-[#ef5f8b]/20">
+                                            <Icons.Plus s={32} className="text-[#ef5f8b]" /> 
+                                        </div>
+                                        <span className="text-[12px] font-black uppercase italic tracking-widest text-[#ef5f8b] drop-shadow-sm">ADD MEMBER TO HOUSEHOLD</span>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ======================================================== */}
+                        {/* SELECT RELATION VIEW                                     */}
+                        {/* ======================================================== */}
+                        {view === 'selectRelation' && viewingHead && (
+                            <div className="min-h-screen bg-[#fde1e9] animate-view pb-20 -mt-6">
+                                <div className="bg-[#a65ebd] rounded-b-[32px] pt-12 pb-8 px-4 shadow-sm relative z-10 flex items-center justify-center">
+                                    <button onClick={() => setView('household')} className="absolute left-4 border-[1.5px] border-white/60 p-2 rounded-[10px] text-white active:scale-75 transition-transform bg-transparent">
+                                        <Icons.CurvedBack />
+                                    </button>
+                                    <h1 className="text-white font-black italic uppercase text-[17px] tracking-widest leading-none drop-shadow-sm text-center mt-1">
+                                        SELECT RELATION TO HEAD
+                                    </h1>
+                                </div>
+
+                                <div className="p-5 mt-2">
+                                    <div className="bg-[#d2bcc5] border-[2px] border-dashed border-[#dc8f9e] rounded-[32px] p-6 pb-8 shadow-sm">
+                                        <div className="flex flex-wrap justify-between gap-y-5">
+                                            {relationOptions.map((rel, index) => {
+                                                const isOddLast = (relationOptions.length % 2 !== 0) && (index === relationOptions.length - 1);
+                                                return (
+                                                    <button key={rel} onClick={() => {
+                                                            let targetGender = 'Male';
+                                                            if (['Wife', 'Mother', 'Mother in Law'].includes(rel)) {
+                                                                targetGender = 'Female';
+                                                            } else if (['Husband', 'Father', 'Father in Law'].includes(rel)) {
+                                                                targetGender = 'Male';
+                                                            } else if (rel === 'Girl') {
+                                                                targetGender = 'Girl';
+                                                            } else if (rel === 'Boy') {
+                                                                targetGender = 'Boy';
+                                                            }
+
+                                                            setFormData({ ...initialForm, headId: viewingHead.id, isFamilyHead: false, poribarNo: viewingHead.poribarNo, relationToHead: rel, gender: targetGender });
+                                                            setView('form');
+                                                        }} 
+                                                        className={`bg-white border-[2px] border-[#a65ebd] rounded-full py-4 px-5 font-black uppercase tracking-wider text-slate-700 active:scale-95 transition-transform flex justify-between items-center shadow-sm ${isOddLast ? 'mx-auto w-[60%]' : 'w-[47%]'}`} >
+                                                        <span className="text-[12px] ml-2">{rel}</span>
+                                                        <div className="opacity-80 scale-90"><Icons.ChevronRight /></div>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
