@@ -78,6 +78,17 @@
             </div>
         );
 
+        // --- NEW COMPONENT FOR CHILDREN 0-6 VIEW GRID CARDS ---
+        const AgeStatCard = ({ label, m, f, bg }) => (
+            <div className={`${bg} border-[2.5px] border-[#222222] rounded-[32px] p-2 py-3 flex flex-col items-center justify-center gap-1.5 shadow-md`}>
+                <div className="border border-white/70 text-white font-bold text-[11px] px-4 py-0.5 rounded-full whitespace-nowrap">{label}</div>
+                <div className="flex gap-2">
+                    <div className="border border-white/70 text-white font-bold text-[11px] px-3 py-0.5 rounded-full">M : {m}</div>
+                    <div className="border border-white/70 text-white font-bold text-[11px] px-3 py-0.5 rounded-full">F : {f}</div>
+                </div>
+            </div>
+        );
+
         const safeLocalStorage = {
             getItem: (key) => { try { return localStorage.getItem(key); } catch (e) { return null; } },
             setItem: (key, value) => { try { localStorage.setItem(key, value); } catch (e) { } },
@@ -233,7 +244,6 @@
                 }
             };
 
-            // EXACT COLORS FOR STATS FROM SCREENSHOT
             const stats = useMemo(() => [
                 { l: 'FAMILIES', v: members.filter(x => x.isFamilyHead).length, bgLeft: 'bg-[#faa000]', bgRight: 'bg-[#f4b938]', img: 'assets/p.png' },
                 { l: 'MEMBERS', v: members.length, bgLeft: 'bg-[#cbdcf6]', bgRight: 'bg-[#dbe5f7]', img: 'assets/fa.png' },
@@ -380,9 +390,9 @@
             );
 
             return (
-                <div className={`min-h-screen animate-view ${view === 'dashboard' ? 'bg-[#df5b86]' : 'bg-[#e52165]'}`}>
+                <div className={`min-h-screen animate-view ${view === 'dashboard' ? 'bg-[#df5b86]' : (view === 'children0to6' ? 'bg-[#fde1e9]' : 'bg-[#e52165]')}`}>
                     
-                    {/* Top Nav Bar ONLY renders when current view is 'dashboard' - EXACT STYLE FROM SCREENSHOT */}
+                    {/* Top Nav Bar ONLY renders when current view is 'dashboard' */}
                     {view === 'dashboard' && (
                         <nav className="sticky top-0 bg-[#ac5ebd] text-white p-4 pt-5 pb-5 flex items-center justify-between shadow-sm z-[60] rounded-b-[24px]">
                             <div className="flex flex-col text-left font-black tracking-tighter leading-[0.9] uppercase">
@@ -400,8 +410,8 @@
                         </nav>
                     )}
 
-                    {/* Standard Inner Pages Header - EXCLUDES custom headers built for other views */}
-                    {!['dashboard', 'addHeadDashboard', 'form', 'household', 'selectRelation', 'beneficiaries'].includes(view) && (
+                    {/* Standard Inner Pages Header */}
+                    {!['dashboard', 'addHeadDashboard', 'form', 'household', 'selectRelation', 'beneficiaries', 'children0to6'].includes(view) && (
                         <nav className="sticky top-0 bg-indigo-700 text-white p-4 flex items-center justify-between shadow-xl z-[60]">
                             <div className="flex items-center gap-3">
                                 <button onClick={() => {
@@ -416,12 +426,11 @@
                     <div className="max-w-md mx-auto space-y-6">
                         
                         {/* ======================================================== */}
-                        {/* UPDATED HOME SCREEN DASHBOARD VIEW (SCREENSHOT EXACT)    */}
+                        {/* DASHBOARD VIEW                                           */}
                         {/* ======================================================== */}
                         {view === 'dashboard' && (
                             <div className="animate-view p-4 pb-10">
                                 
-                                {/* Dashed Border Stats Container */}
                                 <div className="border-[2.5px] border-dashed border-[#b66cbe] rounded-[36px] p-4 mb-6">
                                     <div className="grid grid-cols-2 gap-4">
                                         {stats.map((s, i) => (
@@ -438,10 +447,8 @@
                                     </div>
                                 </div>
 
-                                {/* White Block containing Search & View Heads */}
                                 <div className="bg-white rounded-[44px] p-5 pb-6 shadow-sm border-none space-y-5 relative">
                                     
-                                    {/* View Family Heads Gradient Button */}
                                     <button onClick={() => setView('addHeadDashboard')} className="w-full h-[110px] bg-gradient-to-r from-[#4d0008] via-[#75000c] to-[#7f000b] rounded-[32px] flex items-center justify-between pl-4 pr-5 text-white font-black uppercase active:scale-95 shadow-md relative overflow-hidden">
                                         <div className="flex items-center gap-2 h-full w-full">
                                             <div className="h-full w-[75px] flex items-end justify-center shrink-0 -ml-1">
@@ -458,10 +465,23 @@
                                         </div>
                                     </button>
 
-                                    {/* Blue Search Bar Outline */}
-                                    <div className="relative mt-2">
-                                        <input placeholder="Search Family ID, Head or Member name" className="w-full py-4 pl-5 pr-12 bg-[#eaedf4] border-[1.5px] border-[#7d8cc4] rounded-full font-bold outline-none text-[#5c688c] placeholder-[#8a96b1] text-[13px] italic" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
-                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[#5c688c] scale-110">
+                                    {/* UPDATED: Multiline Placeholder Search Bar */}
+                                    <div className="relative mt-2 h-[70px]">
+                                        <div className="absolute inset-0 bg-[#eaedf4] border-[1.5px] border-[#7d8cc4] rounded-full z-0 pointer-events-none"></div>
+                                        
+                                        {!searchTerm && (
+                                            <div className="absolute left-6 top-1/2 -translate-y-1/2 text-[#8a96b1] text-[13px] italic font-bold leading-tight pointer-events-none z-10">
+                                                Search Family ID,<br/>Head or Member name
+                                            </div>
+                                        )}
+                                        
+                                        <input 
+                                            className="w-full h-full pl-6 pr-14 font-bold outline-none text-[#5c688c] text-[13px] italic bg-transparent relative z-20" 
+                                            value={searchTerm} 
+                                            onChange={e => setSearchTerm(e.target.value)} 
+                                        />
+                                        
+                                        <div className="absolute right-5 top-1/2 -translate-y-1/2 text-[#5c688c] scale-110 z-20 pointer-events-none">
                                             <Icons.Search />
                                         </div>
                                     </div>
@@ -487,7 +507,6 @@
                                     )}
                                 </div>
 
-                                {/* BENEFICIARIES BUTTON - EXACT STYLE */}
                                 <div className="mt-8 mb-4">
                                     <button onClick={() => setView('beneficiaries')} className="w-full bg-[#cd527a] border-[4px] border-[#e4658e] shadow-lg rounded-[48px] py-6 flex items-center justify-center gap-3 active:scale-95 transition-transform relative overflow-hidden">
                                         <span className="text-white font-black italic text-[24px] uppercase tracking-wide leading-none" 
@@ -504,12 +523,11 @@
                         )}
 
                         {/* ======================================================== */}
-                        {/* NEW: BENEFICIARIES DASHBOARD VIEW                        */}
+                        {/* BENEFICIARIES DASHBOARD VIEW                             */}
                         {/* ======================================================== */}
                         {view === 'beneficiaries' && (
                             <div className="min-h-screen bg-[#fde1e9] animate-view pb-20 -mt-6">
                                 
-                                {/* Header */}
                                 <div className="bg-[#a65ebd] rounded-b-[32px] pt-12 pb-8 px-4 shadow-sm relative z-10 flex items-center justify-center">
                                     <button onClick={() => setView('dashboard')} className="absolute left-4 border-[1.5px] border-white/60 p-2 rounded-[10px] text-white active:scale-75 transition-transform bg-transparent">
                                         <Icons.CurvedBack />
@@ -520,10 +538,8 @@
                                 </div>
 
                                 <div className="p-4 mt-1">
-                                    {/* Dashed Border Wrapper */}
                                     <div className="bg-[#d2bcc5] border-[2px] border-dashed border-[#dc8f9e] rounded-[36px] p-4 pb-6 shadow-sm">
                                         
-                                        {/* Grid of 4 Cards */}
                                         <div className="grid grid-cols-2 gap-3.5">
                                             <BeneficiaryCard title="PREGNANT WOMEN" count="13" imgSrc="assets/3.png" />
                                             <BeneficiaryCard title="LACTATING MOTHERS" count="13" imgSrc="assets/5.png" />
@@ -531,31 +547,120 @@
                                             <BeneficiaryCard title="CHILDREN (6 MON - 3 YEARS)" count="13" imgSrc="assets/2.png" />
                                         </div>
 
-                                        {/* Centered 5th Card */}
                                         <div className="flex justify-center mt-4">
                                             <div className="w-[50%]">
                                                 <BeneficiaryCard title="CHILDREN (3 - 6 YEARS)" count="13" imgSrc="assets/4.png" />
                                             </div>
                                         </div>
-
                                     </div>
 
-                                    {/* Bottom Banner Card */}
-                                    <div className="mt-5 bg-white border-[3px] border-[#8a2f42] rounded-full py-2.5 px-6 flex items-center justify-between shadow-sm relative overflow-hidden h-[95px]">
-                                        {/* Left Side Images Box */}
-                                        <div className="flex gap-1 items-end h-full w-[65%] relative">
-                                            <div className="w-[110%] h-[150%] bg-[#fcf2f4] rounded-tr-[50px] rounded-br-[20px] absolute bottom-[-10%] left-[-20%] z-0"></div>
+                                    {/* UPDATED: Clickable banner and fixed overflow issue for '13' text box */}
+                                    <button onClick={() => setView('children0to6')} className="mt-5 w-full bg-white border-[3px] border-[#8a2f42] rounded-full py-2.5 px-6 flex items-center justify-between shadow-sm relative h-[95px] active:scale-95 transition-transform text-left">
+                                        <div className="absolute inset-0 overflow-hidden rounded-full z-0 pointer-events-none">
+                                            <div className="w-[110%] h-[150%] bg-[#fcf2f4] rounded-tr-[50px] rounded-br-[20px] absolute bottom-[-10%] left-[-20%]"></div>
+                                        </div>
+                                        
+                                        <div className="flex gap-1 items-end h-full w-[65%] relative z-10 pointer-events-none">
                                             <img src="assets/1.png" className="h-[50px] relative z-10 -ml-2 object-contain" />
                                             <img src="assets/2.png" className="h-[65px] relative z-10 -ml-3 object-contain" />
                                             <img src="assets/4.png" className="h-[80px] relative z-10 -ml-4 object-contain" />
                                         </div>
-                                        {/* Right Side Info */}
-                                        <div className="flex flex-col items-end justify-center z-10 -mt-1">
+                                        
+                                        <div className="flex flex-col items-end justify-center z-10 pointer-events-none pr-1">
                                             <h3 className="text-[12px] font-black text-[#5a5a5a] uppercase text-right leading-tight mb-1.5">CHILDREN<br/>0M - 6Y</h3>
-                                            <div className="bg-[#d45652] text-white font-black text-[13px] px-6 py-1.5 rounded-full shadow-sm w-fit leading-none">13</div>
+                                            <div className="bg-[#d45652] text-white font-black text-[13px] px-6 py-1.5 rounded-full shadow-md w-fit leading-none shrink-0">13</div>
                                         </div>
-                                    </div>
+                                    </button>
                                     
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ======================================================== */}
+                        {/* NEW: CHILDREN 0M - 6Y DETAILS PAGE                       */}
+                        {/* ======================================================== */}
+                        {view === 'children0to6' && (
+                            <div className="min-h-screen bg-[#fde1e9] animate-view -mt-6">
+                                
+                                {/* Top Purple Panel */}
+                                <div className="bg-[#a65ebd] rounded-b-[24px] pt-10 pb-6 px-5 shadow-sm relative z-10">
+                                    <div className="flex justify-between items-center mb-6">
+                                        <button onClick={() => setView('beneficiaries')} className="border-[1.5px] border-white/60 p-1.5 rounded-[10px] text-white active:scale-75 transition-transform bg-transparent">
+                                            <Icons.CurvedBack />
+                                        </button>
+                                        <h1 className="text-white font-black italic text-[16px] uppercase tracking-widest leading-none drop-shadow-sm text-center">
+                                            CHILDREN ( 0M - 6Y )
+                                        </h1>
+                                        <button onClick={() => setRefreshTick(t => t + 1)} className="border-[1.5px] border-white/60 p-1.5 rounded-[10px] text-white active:bg-white/20 transition-colors bg-transparent">
+                                            <Icons.Refresh s={20} />
+                                        </button>
+                                    </div>
+
+                                    {/* Grid Container */}
+                                    <div className="grid grid-cols-2 gap-3 mb-4">
+                                        <AgeStatCard label="0M-6M : 123" m="123" f="123" bg="bg-[#ce8590]" />
+                                        <AgeStatCard label="6M-1Y : 123" m="123" f="123" bg="bg-[#4a5568]" />
+                                        <AgeStatCard label="1Y-2Y : 123" m="123" f="123" bg="bg-[#f06e9c]" />
+                                        <AgeStatCard label="2Y-3Y : 123" m="123" f="123" bg="bg-[#0273b5]" />
+                                        <AgeStatCard label="3Y-4Y : 123" m="123" f="123" bg="bg-[#b58b00]" />
+                                        <AgeStatCard label="4Y-5Y : 123" m="123" f="123" bg="bg-[#1a209e]" />
+                                        <AgeStatCard label="5Y-6Y : 123" m="123" f="123" bg="bg-[#9c183b]" />
+                                        <AgeStatCard label="TOTAL : 123" m="123" f="123" bg="bg-[#d69900]" />
+                                    </div>
+
+                                    <div className="flex justify-center mt-6 mb-2">
+                                        <button className="border-[1.5px] border-white text-white px-10 py-0.5 rounded-[10px] text-xl font-light active:bg-white/20 transition-colors leading-none shadow-sm">
+                                            +
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Bottom List Panel */}
+                                <div className="p-4 pt-5 pb-20 space-y-4">
+                                    {/* Static Card 1 */}
+                                    <div className="bg-white border-[2.5px] border-[#f5c2c7] rounded-[32px] p-4 flex items-center gap-4 shadow-sm relative">
+                                        <div className="w-[85px] h-[85px] rounded-[24px] bg-[#f8f9fa] overflow-hidden shrink-0 border-[1.5px] border-slate-100 flex items-center justify-center p-1">
+                                            <img src="https://cdn-icons-png.flaticon.com/512/3063/3063822.png" alt="icon" className="w-full h-full object-contain drop-shadow-md" />
+                                        </div>
+                                        <div className="flex-1 flex flex-col justify-center">
+                                            <div className="flex gap-1.5 mb-2">
+                                                <span className="bg-[#e4e8fc] text-[#6d79c6] text-[10px] font-black px-2 py-0.5 rounded uppercase leading-tight">ID: 1</span>
+                                                <span className="bg-[#fce4e8] text-[#c75e71] text-[10px] font-black px-2 py-0.5 rounded uppercase italic leading-tight">GIRL</span>
+                                                <span className="bg-[#4d5b69] text-white text-[10px] font-black px-2.5 py-0.5 rounded uppercase leading-tight">24Y - 07M</span>
+                                            </div>
+                                            <h4 className="font-black text-[#222222] text-[18px] uppercase leading-none mb-3">JISAN BOSS</h4>
+                                            <div className="flex gap-2">
+                                                <span className="border-[1.5px] border-slate-200 text-slate-400 text-[9px] font-black px-3 py-1 rounded-full uppercase leading-none">FATHER NAME</span>
+                                                <span className="border-[1.5px] border-slate-200 text-slate-400 text-[9px] font-black px-3 py-1 rounded-full uppercase leading-none">MOTHER NAME</span>
+                                            </div>
+                                        </div>
+                                        <button className="w-[50px] h-[50px] bg-[#0bb37a] text-white rounded-[16px] flex items-center justify-center shrink-0 shadow-md active:scale-90 transition-transform">
+                                            <Icons.Phone s={24} />
+                                        </button>
+                                    </div>
+
+                                    {/* Static Card 2 */}
+                                    <div className="bg-white border-[2.5px] border-[#f5c2c7] rounded-[32px] p-4 flex items-center gap-4 shadow-sm relative">
+                                        <div className="w-[85px] h-[85px] rounded-[24px] bg-[#f8f9fa] overflow-hidden shrink-0 border-[1.5px] border-slate-100 flex items-center justify-center p-1">
+                                            <img src="https://cdn-icons-png.flaticon.com/512/3063/3063822.png" alt="icon" className="w-full h-full object-contain drop-shadow-md" />
+                                        </div>
+                                        <div className="flex-1 flex flex-col justify-center">
+                                            <div className="flex gap-1.5 mb-2">
+                                                <span className="bg-[#e4e8fc] text-[#6d79c6] text-[10px] font-black px-2 py-0.5 rounded uppercase leading-tight">ID: 1</span>
+                                                <span className="bg-[#fce4e8] text-[#c75e71] text-[10px] font-black px-2 py-0.5 rounded uppercase italic leading-tight">GIRL</span>
+                                                <span className="bg-[#4d5b69] text-white text-[10px] font-black px-2.5 py-0.5 rounded uppercase leading-tight">24Y - 07M</span>
+                                            </div>
+                                            <h4 className="font-black text-[#222222] text-[18px] uppercase leading-none mb-3">JISAN BOSS</h4>
+                                            <div className="flex gap-2">
+                                                <span className="border-[1.5px] border-slate-200 text-slate-400 text-[9px] font-black px-3 py-1 rounded-full uppercase leading-none">FATHER NAME</span>
+                                                <span className="border-[1.5px] border-slate-200 text-slate-400 text-[9px] font-black px-3 py-1 rounded-full uppercase leading-none">MOTHER NAME</span>
+                                            </div>
+                                        </div>
+                                        <button className="w-[50px] h-[50px] bg-[#0bb37a] text-white rounded-[16px] flex items-center justify-center shrink-0 shadow-md active:scale-90 transition-transform">
+                                            <Icons.Phone s={24} />
+                                        </button>
+                                    </div>
+
                                 </div>
                             </div>
                         )}
