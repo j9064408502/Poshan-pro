@@ -52,6 +52,7 @@
             Search: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" cy="21" x2="16.65" y2="16.65"/></svg>,
             LogOut: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" cy="12" x2="9" y2="12"/></svg>,
             Excel: ({s=18}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>,
+            Download: ({s=18}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
             Google: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>,
             ChevronRight: ({className=""}) => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="9 18 15 12 9 6"/></svg>,
             CheckCircle: ({s=18}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
@@ -205,12 +206,10 @@
                         const isFemale = (m.gender === 'Female' || m.gender === 'Girl');
                         const isMale = (m.gender === 'Male' || m.gender === 'Boy');
 
-                        // Dashboard Box Counts
                         if (months <= 6) c0_6m++;
                         else if (months <= 36) c6m_3y++;
                         else if (months <= 72) c3y_6y++;
 
-                        // Detailed View Categorization
                         if (months <= 6) {
                             if (isMale) cat['0-6m_m']++; else if (isFemale) cat['0-6m_f']++;
                         } else if (months <= 12) {
@@ -303,6 +302,22 @@
             useEffect(() => {
                 if (viewingHead) { const freshHead = members.find(m => m.id === viewingHead.id); if (freshHead) setViewingHead(freshHead); }
             }, [members]);
+
+            // --- EXCEL TEMPLATE DOWNLOAD LOGIC ---
+            const handleDownloadTemplate = () => {
+                const templateData = [
+                    { Family_ID: '101', Role: 'Head', Relation: 'Self', First_Name: 'Rahim', Last_Name: 'Ali', Gender: 'Male', Birth_Date: '15/08/1990', Mobile: '9876543210', Aadhaar: '123456789012', Maternal_Status: 'NA' },
+                    { Family_ID: '101', Role: 'Member', Relation: 'Wife', First_Name: 'Fatima', Last_Name: 'Bibi', Gender: 'Female', Birth_Date: '12/04/1995', Mobile: '9876543211', Aadhaar: '123456789013', Maternal_Status: 'PREG' }
+                ];
+                try {
+                    const ws = XLSX.utils.json_to_sheet(templateData);
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, "Family_Template");
+                    XLSX.writeFile(wb, "Poshan_Master_Template.xlsx");
+                } catch (error) {
+                    alert("Download failed. Make sure your browser allows downloads.");
+                }
+            };
 
             // --- EXCEL UPLOAD LOGIC ---
             const handleExcelUpload = async (e) => {
@@ -545,10 +560,6 @@
 
             const filteredHeads = members.filter(m => m.isFamilyHead).filter(h => `${h.firstName} ${h.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) || h.poribarNo?.includes(searchTerm));
 
-            // ==========================================
-            // RENDER BLOCKS
-            // ==========================================
-
             if (view === 'login') return (
                 <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 animate-view">
                     <div className="w-full max-w-sm bg-white p-8 rounded-[48px] shadow-2xl text-center space-y-6 border-b-8 border-indigo-100 leading-none">
@@ -602,7 +613,6 @@
             return (
                 <div className={`min-h-screen animate-view ${view === 'dashboard' ? 'bg-[#df5b86]' : (view === 'children0to6' ? 'bg-[#fde1e9]' : 'bg-[#e52165]')}`}>
                     
-                    {/* Top Nav Bar ONLY renders when current view is 'dashboard' */}
                     {view === 'dashboard' && (
                         <nav className="sticky top-0 bg-[#ac5ebd] text-white p-4 pt-5 pb-5 flex items-center justify-between shadow-sm z-[60] rounded-b-[24px]">
                             <div className="flex flex-col text-left font-black tracking-tighter leading-[0.9] uppercase">
@@ -620,7 +630,6 @@
                         </nav>
                     )}
 
-                    {/* Standard Inner Pages Header */}
                     {!['dashboard', 'addHeadDashboard', 'form', 'household', 'selectRelation', 'beneficiaries', 'children0to6'].includes(view) && (
                         <nav className="sticky top-0 bg-indigo-700 text-white p-4 flex items-center justify-between shadow-xl z-[60]">
                             <div className="flex items-center gap-3">
@@ -798,54 +807,14 @@
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-3 mb-4">
-                                        <AgeStatCard 
-                                            label={`0M-6M : ${beneficiaryCounts.cat['0-6m_m'] + beneficiaryCounts.cat['0-6m_f']}`} 
-                                            m={beneficiaryCounts.cat['0-6m_m']} 
-                                            f={beneficiaryCounts.cat['0-6m_f']} 
-                                            bg="bg-[#ce8590]" 
-                                        />
-                                        <AgeStatCard 
-                                            label={`6M-1Y : ${beneficiaryCounts.cat['6m-1y_m'] + beneficiaryCounts.cat['6m-1y_f']}`} 
-                                            m={beneficiaryCounts.cat['6m-1y_m']} 
-                                            f={beneficiaryCounts.cat['6m-1y_f']} 
-                                            bg="bg-[#4a5568]" 
-                                        />
-                                        <AgeStatCard 
-                                            label={`1Y-2Y : ${beneficiaryCounts.cat['1y-2y_m'] + beneficiaryCounts.cat['1y-2y_f']}`} 
-                                            m={beneficiaryCounts.cat['1y-2y_m']} 
-                                            f={beneficiaryCounts.cat['1y-2y_f']} 
-                                            bg="bg-[#f06e9c]" 
-                                        />
-                                        <AgeStatCard 
-                                            label={`2Y-3Y : ${beneficiaryCounts.cat['2y-3y_m'] + beneficiaryCounts.cat['2y-3y_f']}`} 
-                                            m={beneficiaryCounts.cat['2y-3y_m']} 
-                                            f={beneficiaryCounts.cat['2y-3y_f']} 
-                                            bg="bg-[#0273b5]" 
-                                        />
-                                        <AgeStatCard 
-                                            label={`3Y-4Y : ${beneficiaryCounts.cat['3y-4y_m'] + beneficiaryCounts.cat['3y-4y_f']}`} 
-                                            m={beneficiaryCounts.cat['3y-4y_m']} 
-                                            f={beneficiaryCounts.cat['3y-4y_f']} 
-                                            bg="bg-[#b58b00]" 
-                                        />
-                                        <AgeStatCard 
-                                            label={`4Y-5Y : ${beneficiaryCounts.cat['4y-5y_m'] + beneficiaryCounts.cat['4y-5y_f']}`} 
-                                            m={beneficiaryCounts.cat['4y-5y_m']} 
-                                            f={beneficiaryCounts.cat['4y-5y_f']} 
-                                            bg="bg-[#1a209e]" 
-                                        />
-                                        <AgeStatCard 
-                                            label={`5Y-6Y : ${beneficiaryCounts.cat['5y-6y_m'] + beneficiaryCounts.cat['5y-6y_f']}`} 
-                                            m={beneficiaryCounts.cat['5y-6y_m']} 
-                                            f={beneficiaryCounts.cat['5y-6y_f']} 
-                                            bg="bg-[#9c183b]" 
-                                        />
-                                        <AgeStatCard 
-                                            label={`TOTAL : ${beneficiaryCounts.cat['total_m'] + beneficiaryCounts.cat['total_f']}`} 
-                                            m={beneficiaryCounts.cat['total_m']} 
-                                            f={beneficiaryCounts.cat['total_f']} 
-                                            bg="bg-[#d69900]" 
-                                        />
+                                        <AgeStatCard label={`0M-6M : ${beneficiaryCounts.cat['0-6m_m'] + beneficiaryCounts.cat['0-6m_f']}`} m={beneficiaryCounts.cat['0-6m_m']} f={beneficiaryCounts.cat['0-6m_f']} bg="bg-[#ce8590]" />
+                                        <AgeStatCard label={`6M-1Y : ${beneficiaryCounts.cat['6m-1y_m'] + beneficiaryCounts.cat['6m-1y_f']}`} m={beneficiaryCounts.cat['6m-1y_m']} f={beneficiaryCounts.cat['6m-1y_f']} bg="bg-[#4a5568]" />
+                                        <AgeStatCard label={`1Y-2Y : ${beneficiaryCounts.cat['1y-2y_m'] + beneficiaryCounts.cat['1y-2y_f']}`} m={beneficiaryCounts.cat['1y-2y_m']} f={beneficiaryCounts.cat['1y-2y_f']} bg="bg-[#f06e9c]" />
+                                        <AgeStatCard label={`2Y-3Y : ${beneficiaryCounts.cat['2y-3y_m'] + beneficiaryCounts.cat['2y-3y_f']}`} m={beneficiaryCounts.cat['2y-3y_m']} f={beneficiaryCounts.cat['2y-3y_f']} bg="bg-[#0273b5]" />
+                                        <AgeStatCard label={`3Y-4Y : ${beneficiaryCounts.cat['3y-4y_m'] + beneficiaryCounts.cat['3y-4y_f']}`} m={beneficiaryCounts.cat['3y-4y_m']} f={beneficiaryCounts.cat['3y-4y_f']} bg="bg-[#b58b00]" />
+                                        <AgeStatCard label={`4Y-5Y : ${beneficiaryCounts.cat['4y-5y_m'] + beneficiaryCounts.cat['4y-5y_f']}`} m={beneficiaryCounts.cat['4y-5y_m']} f={beneficiaryCounts.cat['4y-5y_f']} bg="bg-[#1a209e]" />
+                                        <AgeStatCard label={`5Y-6Y : ${beneficiaryCounts.cat['5y-6y_m'] + beneficiaryCounts.cat['5y-6y_f']}`} m={beneficiaryCounts.cat['5y-6y_m']} f={beneficiaryCounts.cat['5y-6y_f']} bg="bg-[#9c183b]" />
+                                        <AgeStatCard label={`TOTAL : ${beneficiaryCounts.cat['total_m'] + beneficiaryCounts.cat['total_f']}`} m={beneficiaryCounts.cat['total_m']} f={beneficiaryCounts.cat['total_f']} bg="bg-[#d69900]" />
                                     </div>
 
                                     <div className="flex justify-center mt-6 mb-2">
@@ -917,14 +886,19 @@
                                         </button>
                                     </div>
                                     
-                                    <div className="flex gap-2">
-                                        <button onClick={() => {setFormData({...initialForm, isFamilyHead: true, relationToHead: 'Self'}); setEditingId(null); setView('form');}} className="flex-[1.2] border-[1.5px] border-white/70 text-white rounded-[10px] py-3 text-[12px] font-black uppercase tracking-wide flex items-center justify-center gap-2 bg-white/5 active:bg-white/20 transition-colors shadow-sm">
-                                            New Head <Icons.Plus s={18} />
+                                    <div className="flex flex-col gap-2.5">
+                                        <button onClick={() => {setFormData({...initialForm, isFamilyHead: true, relationToHead: 'Self'}); setEditingId(null); setView('form');}} className="w-full border-[1.5px] border-white/70 text-white rounded-[10px] py-3 text-[12px] font-black uppercase tracking-wide flex items-center justify-center gap-2 bg-white/5 active:bg-white/20 transition-colors shadow-sm">
+                                            New Head Registration <Icons.Plus s={18} />
                                         </button>
                                         
-                                        <button onClick={() => fileInputRefExcel.current?.click()} className="flex-1 bg-white text-[#a65ebd] border-[1.5px] border-white rounded-[10px] py-3 text-[12px] font-black uppercase tracking-wide flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform">
-                                            {isUploadingExcel ? "Syncing..." : <><Icons.Excel s={16} /> Upload Excel</>}
-                                        </button>
+                                        <div className="flex gap-2">
+                                            <button onClick={handleDownloadTemplate} className="flex-1 bg-white text-[#a65ebd] border-[1.5px] border-white rounded-[10px] py-3 text-[11px] font-black uppercase tracking-wide flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform">
+                                                <Icons.Download s={16} /> Get Template
+                                            </button>
+                                            <button onClick={() => fileInputRefExcel.current?.click()} className="flex-1 bg-[#a65ebd] text-white border-[1.5px] border-white/80 rounded-[10px] py-3 text-[11px] font-black uppercase tracking-wide flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform">
+                                                {isUploadingExcel ? "Syncing..." : <><Icons.Excel s={16} /> Upload Excel</>}
+                                            </button>
+                                        </div>
                                         <input type="file" accept=".xlsx, .xls" ref={fileInputRefExcel} className="hidden" onChange={handleExcelUpload} />
                                     </div>
                                 </div>
