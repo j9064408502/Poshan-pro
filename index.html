@@ -319,7 +319,7 @@
                 }
             };
 
-            // --- EXCEL UPLOAD LOGIC ---
+            // --- EXCEL UPLOAD LOGIC WITH AUTO GENDER & AGE SYNC ---
             const handleExcelUpload = async (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -384,19 +384,31 @@
                         family.forEach(memberRow => {
                             if (String(memberRow.Role).toLowerCase().trim() === 'head') return;
                             
+                            const rel = memberRow.Relation || 'Other';
+                            let targetGender = memberRow.Gender || 'Male';
+                            if (['Wife', 'Mother', 'Mother in Law'].includes(rel)) {
+                                targetGender = 'Female';
+                            } else if (['Husband', 'Father', 'Father in Law'].includes(rel)) {
+                                targetGender = 'Male';
+                            } else if (rel === 'Girl') {
+                                targetGender = 'Girl';
+                            } else if (rel === 'Boy') {
+                                targetGender = 'Boy';
+                            }
+
                             const memberAge = calcAgeString(memberRow.Birth_Date);
 
                             const memberData = {
                                 firstName: memberRow.First_Name || '',
                                 lastName: memberRow.Last_Name || '',
-                                gender: memberRow.Gender || 'Male',
+                                gender: targetGender,
                                 birthDate: memberRow.Birth_Date || '',
                                 age: memberAge,
                                 mobile: String(memberRow.Mobile || '').replace(/\D/g, '').slice(0, 10),
                                 aadhaar: String(memberRow.Aadhaar || '').replace(/\D/g, '').slice(0, 12),
                                 maternalStatus: memberRow.Maternal_Status || 'NA',
                                 poribarNo: fId,
-                                relationToHead: memberRow.Relation || 'Other',
+                                relationToHead: rel,
                                 isFamilyHead: false,
                                 headId: headDocId,
                                 photoURL: '',
@@ -613,6 +625,7 @@
             return (
                 <div className={`min-h-screen animate-view ${view === 'dashboard' ? 'bg-[#df5b86]' : (view === 'children0to6' ? 'bg-[#fde1e9]' : 'bg-[#e52165]')}`}>
                     
+                    {/* Top Nav Bar ONLY renders when current view is 'dashboard' */}
                     {view === 'dashboard' && (
                         <nav className="sticky top-0 bg-[#ac5ebd] text-white p-4 pt-5 pb-5 flex items-center justify-between shadow-sm z-[60] rounded-b-[24px]">
                             <div className="flex flex-col text-left font-black tracking-tighter leading-[0.9] uppercase">
@@ -630,6 +643,7 @@
                         </nav>
                     )}
 
+                    {/* Standard Inner Pages Header */}
                     {!['dashboard', 'addHeadDashboard', 'form', 'household', 'selectRelation', 'beneficiaries', 'children0to6'].includes(view) && (
                         <nav className="sticky top-0 bg-indigo-700 text-white p-4 flex items-center justify-between shadow-xl z-[60]">
                             <div className="flex items-center gap-3">
@@ -1188,7 +1202,7 @@
                                                             setFormData({ ...initialForm, headId: viewingHead.id, isFamilyHead: false, poribarNo: viewingHead.poribarNo, relationToHead: rel, gender: targetGender });
                                                             setView('form');
                                                         }} 
-                                                        className={`bg-white border-[2px] border-[#a65ebd] rounded-full py-4 px-5 font-black uppercase tracking-wider text-slate-700 active:scale-95 transition-transform flex justify-between items-center shadow-sm ${isOddLast ? 'mx-auto w-[60%]' : 'w-[47%]'}`} >
+                                                        className={`bg-white border-[2.5px] border-[#a65ebd] rounded-full py-4 px-5 font-black uppercase tracking-wider text-slate-700 active:scale-95 transition-transform flex justify-between items-center shadow-sm ${isOddLast ? 'mx-auto w-[60%]' : 'w-[47%]'}`} >
                                                         <span className="text-[12px] ml-2">{rel}</span>
                                                         <div className="opacity-80 scale-90"><Icons.ChevronRight /></div>
                                                     </button>
