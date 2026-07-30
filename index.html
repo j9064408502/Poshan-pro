@@ -798,14 +798,80 @@
                             <div className="min-h-screen bg-[#fde1e9] animate-view pb-20 -mt-6">
                                 <div className="bg-[#a65ebd] rounded-b-[24px] pt-8 pb-8 px-4 shadow-sm relative z-10">
                                     <div className="flex justify-between items-center mb-1">
-                                        <button onClick={() => setView('addHeadDashboard')} className="border-[1.5px] border-white/60 p-2 rounded-[10px] text-white"><Icons.CurvedBack /></button>
-                                        <h1 className="text-white font-black italic uppercase text-[17px] tracking-widest text-center flex-1">HEAD FAMILY DETAILS</h1>
+                                        <button onClick={() => setView('addHeadDashboard')} className="border-[1.5px] border-white/60 p-2 rounded-[10px] text-white active:scale-75 transition-transform bg-transparent">
+                                            <Icons.CurvedBack />
+                                        </button>
+                                        <h1 className="text-white font-black italic uppercase text-[17px] tracking-widest leading-none text-center flex-1 drop-shadow-sm">
+                                            HEAD FAMILY DETAILS
+                                        </h1>
+                                        <button onClick={() => setRefreshTick(t => t + 1)} className="border-[1.5px] border-white/60 p-2 rounded-[10px] text-white active:bg-white/20 transition-colors bg-transparent">
+                                            <Icons.Refresh s={20} />
+                                        </button>
                                     </div>
                                 </div>
+
                                 <div className="p-4 space-y-6">
-                                    <button onClick={() => setView('selectRelation')} className="w-full border-[2px] border-dashed border-[#ef5f8b] py-14 px-6 rounded-[32px] flex flex-col items-center justify-center gap-4 bg-transparent text-[#ef5f8b]">
-                                        <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm border-[1px] border-[#ef5f8b]/20"><Icons.Plus s={32} className="text-[#ef5f8b]" /></div>
-                                        <span className="text-[12px] font-black uppercase italic tracking-widest text-[#ef5f8b]">ADD MEMBER TO HOUSEHOLD</span>
+                                    <div className="bg-[#9d5baf] p-4 rounded-[28px] shadow-md relative">
+                                        <div className="flex justify-between items-start mb-4">
+                                            <span className="bg-[#f2eff4] text-[#ef5f8b] text-[10px] font-black italic px-4 py-1.5 rounded-full shadow-sm">
+                                                Head Profile
+                                            </span>
+                                            <span className="bg-[#d49bb4] border-[1.5px] border-black text-black text-[11px] font-black px-4 py-1.5 rounded-full tracking-widest">
+                                                ID: {viewingHead.poribarNo || '1'}
+                                            </span>
+                                        </div>
+
+                                        <div className="flex gap-4 items-center">
+                                            <div className="w-[90px] h-[90px] rounded-[24px] border-[3px] border-[#293260] bg-white overflow-hidden shrink-0 flex items-center justify-center shadow-sm">
+                                                <img src={viewingHead.photoURL || "https://cdn-icons-png.flaticon.com/512/3063/3063822.png"} className="w-[95%] h-[95%] rounded-[18px] object-cover bg-slate-100" />
+                                            </div>
+                                            <div className="flex flex-col gap-2.5">
+                                                <div className="bg-white/20 px-3.5 py-1.5 rounded-[8px] inline-block w-fit shadow-sm">
+                                                    <h3 className="text-[17px] font-black uppercase text-white leading-none tracking-wide">{viewingHead.firstName} {viewingHead.lastName}</h3>
+                                                </div>
+                                                <div className="bg-white/20 px-3.5 py-1.5 rounded-[8px] inline-block w-fit shadow-sm">
+                                                    <p className="text-[11px] font-black italic text-white uppercase leading-none tracking-widest">
+                                                        {viewingHead.age ? (viewingHead.age.includes('-') ? `${viewingHead.age.split('-')[0]}Y - ${viewingHead.age.split('-')[1]}M` : viewingHead.age) : '00Y - 00M'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex justify-end gap-3 mt-5">
+                                            <button onClick={() => {setEditingId(viewingHead.id); setFormData(viewingHead); setView('form');}} className="bg-white border-[1.5px] border-black text-[#4f46e5] px-5 py-2.5 rounded-full font-black uppercase text-[12px] shadow-sm active:scale-95 transition-transform tracking-wider">
+                                                EDIT PROFILE
+                                            </button>
+                                            <button onClick={() => handleDeleteFamily(viewingHead.id)} className="bg-[#ef5f8b] w-[42px] h-[42px] flex items-center justify-center rounded-[12px] text-white shadow-sm active:scale-95 transition-all">
+                                                <Icons.Trash />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        {members.filter(m => m.headId === viewingHead.id && !m.isFamilyHead).map(m => (
+                                            <div key={m.id} className="bg-white p-4 rounded-[32px] border-[1.5px] border-[#ffb3c6] flex items-center gap-4 shadow-sm active:scale-95 transition-all">
+                                                <img src={m.photoURL || "https://cdn-icons-png.flaticon.com/512/3063/3063822.png"} className="w-14 h-14 rounded-2xl object-cover border" />
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2 mb-1.5">
+                                                        <p className="text-[10px] font-black text-[#ef5f8b] uppercase italic leading-none tracking-widest">{m.relationToHead}</p>
+                                                        {m.mobile && ( <a href={`tel:${m.mobile}`} className="p-1 bg-[#fde1e9] text-[#ef5f8b] rounded-full flex items-center justify-center active:scale-75"><Icons.CallLogo s={10} /></a> )}
+                                                    </div>
+                                                    <h5 className="font-black uppercase text-base leading-none text-[#222222] truncate">{m.firstName} {m.lastName}</h5>
+                                                    <p className="text-[10px] font-bold text-slate-500 mt-1.5 uppercase tracking-tighter leading-none">{m.age} • {m.gender}</p>
+                                                </div>
+                                                <div className="flex items-center gap-1.5 leading-none">
+                                                    <button onClick={() => {setEditingId(m.id); setFormData(m); setView('form');}} className="p-3 bg-indigo-50 text-indigo-400 rounded-2xl active:text-indigo-600 transition-colors leading-none"><Icons.Edit /></button>
+                                                    <button onClick={() => handleDeleteMember(m.id)} className="p-3 bg-rose-50 text-rose-400 rounded-2xl active:text-rose-600 transition-colors leading-none"><Icons.Trash /></button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <button onClick={() => setView('selectRelation')} className="w-full border-[2px] border-dashed border-[#ef5f8b] py-14 px-6 rounded-[32px] flex flex-col items-center justify-center gap-4 bg-transparent active:bg-white/20 transition-all text-[#ef5f8b]">
+                                        <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm border-[1px] border-[#ef5f8b]/20">
+                                            <Icons.Plus s={32} className="text-[#ef5f8b]" /> 
+                                        </div>
+                                        <span className="text-[12px] font-black uppercase italic tracking-widest text-[#ef5f8b] drop-shadow-sm">ADD MEMBER TO HOUSEHOLD</span>
                                     </button>
                                 </div>
                             </div>
@@ -815,8 +881,43 @@
                         {view === 'selectRelation' && viewingHead && (
                             <div className="min-h-screen bg-[#fde1e9] animate-view pb-20 -mt-6">
                                 <div className="bg-[#a65ebd] rounded-b-[32px] pt-12 pb-8 px-4 shadow-sm relative z-10 flex items-center justify-center">
-                                    <button onClick={() => setView('household')} className="absolute left-4 border-[1.5px] border-white/60 p-2 rounded-[10px] text-white"><Icons.CurvedBack /></button>
-                                    <h1 className="text-white font-black italic uppercase text-[17px] tracking-widest mt-1">SELECT RELATION TO HEAD</h1>
+                                    <button onClick={() => setView('household')} className="absolute left-4 border-[1.5px] border-white/60 p-2 rounded-[10px] text-white active:scale-75 transition-transform bg-transparent">
+                                        <Icons.CurvedBack />
+                                    </button>
+                                    <h1 className="text-white font-black italic uppercase text-[17px] tracking-widest leading-none drop-shadow-sm text-center mt-1">
+                                        SELECT RELATION TO HEAD
+                                    </h1>
+                                </div>
+
+                                <div className="p-5 mt-2">
+                                    <div className="bg-[#d2bcc5] border-[2px] border-dashed border-[#dc8f9e] rounded-[32px] p-6 pb-8 shadow-sm">
+                                        <div className="flex flex-wrap justify-between gap-y-5">
+                                            {relationOptions.map((rel, index) => {
+                                                const isOddLast = (relationOptions.length % 2 !== 0) && (index === relationOptions.length - 1);
+                                                return (
+                                                    <button key={rel} onClick={() => {
+                                                            let targetGender = 'Male';
+                                                            if (['Wife', 'Mother', 'Mother in Law'].includes(rel)) {
+                                                                targetGender = 'Female';
+                                                            } else if (['Husband', 'Father', 'Father in Law'].includes(rel)) {
+                                                                targetGender = 'Male';
+                                                            } else if (rel === 'Girl') {
+                                                                targetGender = 'Girl';
+                                                            } else if (rel === 'Boy') {
+                                                                targetGender = 'Boy';
+                                                            }
+
+                                                            setFormData({ ...initialForm, headId: viewingHead.id, isFamilyHead: false, poribarNo: viewingHead.poribarNo, relationToHead: rel, gender: targetGender });
+                                                            setView('form');
+                                                        }} 
+                                                        className={`bg-white border-[2.5px] border-[#a65ebd] rounded-full py-4 px-5 font-black uppercase tracking-wider text-slate-700 active:scale-95 transition-transform flex justify-between items-center shadow-sm ${isOddLast ? 'mx-auto w-[60%]' : 'w-[47%]'}`} >
+                                                        <span className="text-[12px] ml-2">{rel}</span>
+                                                        <div className="opacity-80 scale-90"><Icons.ChevronRight /></div>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         )}
