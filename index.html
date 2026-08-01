@@ -207,6 +207,8 @@
             };
 
             // --- SAFELY PARSED CALCULATIONS TO PREVENT CRASHES ---
+            
+            // Fixed Age Calculation based on EXACT exact Days to prevent extra month count
             const calculateAgeInMonths = (birthDateStr) => {
                 if (!birthDateStr || typeof birthDateStr !== 'string' || birthDateStr.length < 10) return -1;
                 const parts = birthDateStr.split('/');
@@ -215,12 +217,15 @@
                 const bDate = new Date(y, m - 1, d);
                 const today = new Date();
                 if (isNaN(bDate.getTime())) return -1;
+                
                 let years = today.getFullYear() - bDate.getFullYear();
                 let months = today.getMonth() - bDate.getMonth();
-                let totalMonths = years * 12 + months;
-                // Perfect precision: subtracts 1 month if exact day of month has not occurred yet
-                if (today.getDate() < bDate.getDate()) { totalMonths--; }
-                return totalMonths;
+                let days = today.getDate() - bDate.getDate();
+                
+                if (days < 0) { months--; }
+                if (months < 0) { years--; months += 12; }
+                
+                return (years * 12) + months;
             };
 
             const parseAgeStringToMonths = (str) => {
@@ -233,16 +238,46 @@
                 return totalM;
             };
 
+            // FIXED: Exact Years & Months Display (00Y - 05M string generator)
             const calcAgeString = (birthDateStr) => {
                 if (!birthDateStr || typeof birthDateStr !== 'string' || birthDateStr.length < 10) return '';
                 const parts = birthDateStr.split('/'); if(parts.length !== 3) return '';
                 const [d, m, y] = parts.map(Number); const bd = new Date(y, m-1, d); const today = new Date();
                 if(isNaN(bd.getTime())) return '';
+                
                 let yrs = today.getFullYear() - bd.getFullYear();
                 let mos = today.getMonth() - bd.getMonth();
-                if(mos < 0 || (mos === 0 && today.getDate() < bd.getDate())) { yrs--; mos += 12; }
-                return `${yrs.toString().padStart(2, '0')}-${mos.toString().padStart(2, '0')}`;
+                let days = today.getDate() - bd.getDate();
+                
+                if (days < 0) { mos--; }
+                if (mos < 0) { yrs--; mos += 12; }
+                
+                return `${yrs.toString().padStart(2, '0')}Y - ${mos.toString().padStart(2, '0')}M`;
             };
+
+            // NEW: Exact Years, Months, Days Details For the form input display
+            const exactAgeDetails = useMemo(() => {
+                if (!formData.birthDate || formData.birthDate.length < 10) return null;
+                const parts = formData.birthDate.split('/');
+                if(parts.length !== 3) return null;
+                const [d, m, y] = parts.map(Number);
+                const bd = new Date(y, m-1, d);
+                const today = new Date();
+                if(isNaN(bd.getTime())) return null;
+
+                let yrs = today.getFullYear() - bd.getFullYear();
+                let mos = today.getMonth() - bd.getMonth();
+                let days = today.getDate() - bd.getDate();
+
+                if (days < 0) {
+                    mos--;
+                    const prevMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+                    days += prevMonth.getDate();
+                }
+                if (mos < 0) { yrs--; mos += 12; }
+                
+                return `${yrs} Years, ${mos} Months, ${days} Days`;
+            }, [formData.birthDate]);
 
             // AUTOMATIC DATA MIGRATION (CONVERTS BOY -> MALE, GIRL -> FEMALE)
             const normalizeData = (dataArray) => {
@@ -814,6 +849,7 @@
                                 <div className="p-4 pt-6 pb-20 space-y-4">
                                     {deskFilteredAndSortedMembers.map(m => {
                                         if(!m) return null;
+                                        // Uses the newly fixed string calculation inside component directly
                                         const displayAge = m.age ? (String(m.age).includes('-') ? `${String(m.age).split('-')[0]}Y - ${String(m.age).split('-')[1]}M` : m.age) : '00Y - 00M';
                                         
                                         // Auto map to format shown in image
@@ -1002,6 +1038,7 @@
                                 <div className="p-4 pt-2 pb-20 space-y-4">
                                     {filteredAndSortedChildren.map(m => {
                                         if(!m) return null;
+                                        // Uses the newly fixed string calculation
                                         const displayAge = m.age ? (String(m.age).includes('-') ? `${String(m.age).split('-')[0]}Y - ${String(m.age).split('-')[1]}M` : m.age) : '00Y - 00M';
                                         
                                         // Find Father and Mother Names
@@ -1141,6 +1178,15 @@
                                                         if (len > 8) val = val.slice(0, 8); let formatted = len <= 2 ? val : len <= 4 ? `${val.slice(0, 2)}/${val.slice(2)}` : `${val.slice(0, 2)}/${val.slice(2, 4)}/${val.slice(4, 8)}`;
                                                         setFormData({...formData, birthDate: formatted});
                                                     }} inputMode="numeric" maxLength={10} />
+                                                
+                                                {/* NEW: LIVE AGE EXACT PREVIEW */}
+                                                {exactAgeDetails && (
+                                                    <div className="flex items-center gap-1.5 mt-2 ml-1 animate-view">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-[#0bb37a] animate-pulse"></div>
+                                                        <p className="text-[10px] font-black text-[#0bb37a] italic tracking-wide">{exactAgeDetails}</p>
+                                                    </div>
+                                                )}
+
                                             </div>
                                         </div>
                                         { ((formData.isFamilyHead && formData.gender === 'Female') || (formData.relationToHead === 'Wife' && formData.gender === 'Female')) && (
