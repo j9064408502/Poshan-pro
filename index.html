@@ -208,7 +208,6 @@
 
             // --- SAFELY PARSED CALCULATIONS TO PREVENT CRASHES ---
             
-            // Fixed Age Calculation based on EXACT exact Days to prevent extra month count
             const calculateAgeInMonths = (birthDateStr) => {
                 if (!birthDateStr || typeof birthDateStr !== 'string' || birthDateStr.length < 10) return -1;
                 const parts = birthDateStr.split('/');
@@ -238,7 +237,20 @@
                 return totalM;
             };
 
-            // FIXED: Exact Years & Months Display (00Y - 05M string generator)
+            // NEW: Clean UI Age Formatter (Fixes 00Y Y - 06MM issue universally)
+            const formatAgeForUI = (ageVal) => {
+                if (!ageVal) return '00 Y - 00 M';
+                // Remove existing Y, y, M, m and spaces to get raw numbers
+                let str = String(ageVal).toUpperCase().replace(/\s/g, '');
+                if (str.includes('-')) {
+                    let parts = str.split('-');
+                    let yPart = parts[0].replace(/Y/g, ''); 
+                    let mPart = parts[1].replace(/M/g, ''); 
+                    return `${yPart.padStart(2, '0')} Y - ${mPart.padStart(2, '0')} M`;
+                }
+                return ageVal; 
+            };
+
             const calcAgeString = (birthDateStr) => {
                 if (!birthDateStr || typeof birthDateStr !== 'string' || birthDateStr.length < 10) return '';
                 const parts = birthDateStr.split('/'); if(parts.length !== 3) return '';
@@ -252,10 +264,9 @@
                 if (days < 0) { mos--; }
                 if (mos < 0) { yrs--; mos += 12; }
                 
-                return `${yrs.toString().padStart(2, '0')}Y - ${mos.toString().padStart(2, '0')}M`;
+                return `${yrs.toString().padStart(2, '0')} Y - ${mos.toString().padStart(2, '0')} M`;
             };
 
-            // NEW: Exact Years, Months, Days Details For the form input display
             const exactAgeDetails = useMemo(() => {
                 if (!formData.birthDate || formData.birthDate.length < 10) return null;
                 const parts = formData.birthDate.split('/');
@@ -279,7 +290,7 @@
                 return `${yrs} Years, ${mos} Months, ${days} Days`;
             }, [formData.birthDate]);
 
-            // AUTOMATIC DATA MIGRATION (CONVERTS BOY -> MALE, GIRL -> FEMALE)
+            // AUTOMATIC DATA MIGRATION
             const normalizeData = (dataArray) => {
                 if (!Array.isArray(dataArray)) return [];
                 return dataArray.map(m => {
@@ -351,7 +362,6 @@
                 setIsSortPopupOpen(false);
             };
 
-            // --- STRICT EXACT AGE COUNTS BOUNDS LOGIC ---
             const beneficiaryCounts = useMemo(() => {
                 let preg = 0, lact = 0, c0_6m = 0, c6m_3y = 0, c3y_6y = 0, c0_6y_total = 0;
                 (members || []).forEach(m => {
@@ -360,12 +370,11 @@
                     if (m.maternalStatus === 'LACT') lact++;
                     
                     const months = calculateAgeInMonths(m.birthDate);
-                    // Strictly less than 72 months (< 6 years)
                     if (months >= 0 && months < 72) {
                         c0_6y_total++;
-                        if (months < 6) { c0_6m++; }               // 0 to 5m 29d
-                        else if (months < 36) { c6m_3y++; }        // exactly 6m to 2y 11m 29d
-                        else if (months < 72) { c3y_6y++; }        // exactly 3y to 5y 11m 29d
+                        if (months < 6) { c0_6m++; }               
+                        else if (months < 36) { c6m_3y++; }        
+                        else if (months < 72) { c3y_6y++; }        
                     }
                 });
                 return { preg, lact, c0_6m, c6m_3y, c3y_6y, c0_6y_total };
@@ -849,8 +858,7 @@
                                 <div className="p-4 pt-6 pb-20 space-y-4">
                                     {deskFilteredAndSortedMembers.map(m => {
                                         if(!m) return null;
-                                        // Uses the newly fixed string calculation inside component directly
-                                        const displayAge = m.age ? (String(m.age).includes('-') ? `${String(m.age).split('-')[0]}Y - ${String(m.age).split('-')[1]}M` : m.age) : '00Y - 00M';
+                                        const displayAge = formatAgeForUI(m.age);
                                         
                                         // Auto map to format shown in image
                                         let relationBg = "bg-[#fce4e8]"; let relationText = "text-[#c75e71]";
@@ -1038,8 +1046,7 @@
                                 <div className="p-4 pt-2 pb-20 space-y-4">
                                     {filteredAndSortedChildren.map(m => {
                                         if(!m) return null;
-                                        // Uses the newly fixed string calculation
-                                        const displayAge = m.age ? (String(m.age).includes('-') ? `${String(m.age).split('-')[0]}Y - ${String(m.age).split('-')[1]}M` : m.age) : '00Y - 00M';
+                                        const displayAge = formatAgeForUI(m.age);
                                         
                                         // Find Father and Mother Names
                                         const head = (members || []).find(x => x && x.id === (m.isFamilyHead ? m.id : m.headId));
@@ -1117,7 +1124,7 @@
                                 <div className="p-4 space-y-3 mt-1">
                                     {filteredHeads.map(h => {
                                         if(!h) return null;
-                                        const displayAge = h.age ? (String(h.age).includes('-') ? `${String(h.age).split('-')[0]}Y - ${String(h.age).split('-')[1]}M` : h.age) : '00Y - 00M';
+                                        const displayAge = formatAgeForUI(h.age);
                                         return (
                                         <div key={h.id} className="bg-white p-3 rounded-[24px] border-[1.5px] border-[#ffb3c6] flex items-center gap-3 shadow-sm active:scale-95 transition-transform">
                                             <div onClick={() => {setViewingHead(h); setView('household');}} className="w-[65px] h-[65px] bg-[#f8f9fa] rounded-[16px] border-[1.5px] border-slate-100 shrink-0 flex items-center justify-center overflow-hidden cursor-pointer"><img src={h.photoURL || "https://cdn-icons-png.flaticon.com/512/3063/3063822.png"} className="w-full h-full object-cover" /></div>
@@ -1179,7 +1186,7 @@
                                                         setFormData({...formData, birthDate: formatted});
                                                     }} inputMode="numeric" maxLength={10} />
                                                 
-                                                {/* NEW: LIVE AGE EXACT PREVIEW */}
+                                                {/* LIVE AGE EXACT PREVIEW */}
                                                 {exactAgeDetails && (
                                                     <div className="flex items-center gap-1.5 mt-2 ml-1 animate-view">
                                                         <div className="w-1.5 h-1.5 rounded-full bg-[#0bb37a] animate-pulse"></div>
@@ -1246,7 +1253,7 @@
                                                 </div>
                                                 <div className="bg-white/20 px-3.5 py-1.5 rounded-[8px] inline-block w-fit shadow-sm">
                                                     <p className="text-[11px] font-black italic text-white uppercase leading-none tracking-widest">
-                                                        {viewingHead.age ? (String(viewingHead.age).includes('-') ? `${String(viewingHead.age).split('-')[0]}Y - ${String(viewingHead.age).split('-')[1]}M` : viewingHead.age) : '00Y - 00M'}
+                                                        {formatAgeForUI(viewingHead.age)}
                                                     </p>
                                                 </div>
                                             </div>
@@ -1272,7 +1279,7 @@
                                                         {m.mobile && ( <a href={`tel:${m.mobile}`} className="p-1 bg-[#fde1e9] text-[#ef5f8b] rounded-full flex items-center justify-center active:scale-75"><Icons.CallLogo s={10} /></a> )}
                                                     </div>
                                                     <h5 className="font-black uppercase text-base leading-none text-[#222222] truncate">{m.firstName} {m.lastName}</h5>
-                                                    <p className="text-[10px] font-bold text-slate-500 mt-1.5 uppercase tracking-tighter leading-none">{m.age} • {m.gender}</p>
+                                                    <p className="text-[10px] font-bold text-slate-500 mt-1.5 uppercase tracking-tighter leading-none">{formatAgeForUI(m.age)} • {m.gender}</p>
                                                 </div>
                                                 <div className="flex items-center gap-1.5 leading-none">
                                                     <button onClick={() => {setEditingId(m.id); setFormData(m); setView('form');}} className="p-3 bg-indigo-50 text-indigo-400 rounded-2xl active:text-indigo-600 transition-colors leading-none"><Icons.Edit /></button>
