@@ -152,6 +152,9 @@
             const [deskPopupMember, setDeskPopupMember] = useState(null);
             const [copiedField, setCopiedField] = useState(null);
 
+            // Beneficiaries Full Screen Image Zoom Pop-up
+            const [zoomImage, setZoomImage] = useState(null);
+
             // Pop-up States for Beneficiary View
             const [isAgePopupOpen, setIsAgePopupOpen] = useState(false);
             const [minAgeInput, setMinAgeInput] = useState('0M');
@@ -215,6 +218,7 @@
                 let years = today.getFullYear() - bDate.getFullYear();
                 let months = today.getMonth() - bDate.getMonth();
                 let totalMonths = years * 12 + months;
+                // Perfect precision: subtracts 1 month if exact day of month has not occurred yet
                 if (today.getDate() < bDate.getDate()) { totalMonths--; }
                 return totalMonths;
             };
@@ -312,18 +316,21 @@
                 setIsSortPopupOpen(false);
             };
 
+            // --- STRICT EXACT AGE COUNTS BOUNDS LOGIC ---
             const beneficiaryCounts = useMemo(() => {
                 let preg = 0, lact = 0, c0_6m = 0, c6m_3y = 0, c3y_6y = 0, c0_6y_total = 0;
                 (members || []).forEach(m => {
                     if (!m) return;
                     if (m.maternalStatus === 'PREG') preg++;
                     if (m.maternalStatus === 'LACT') lact++;
+                    
                     const months = calculateAgeInMonths(m.birthDate);
-                    if (months >= 0 && months <= 72) {
+                    // Strictly less than 72 months (< 6 years)
+                    if (months >= 0 && months < 72) {
                         c0_6y_total++;
-                        if (months <= 6) c0_6m++;
-                        else if (months <= 36) c6m_3y++;
-                        else if (months <= 72) c3y_6y++;
+                        if (months < 6) { c0_6m++; }               // 0 to 5m 29d
+                        else if (months < 36) { c6m_3y++; }        // exactly 6m to 2y 11m 29d
+                        else if (months < 72) { c3y_6y++; }        // exactly 3y to 5y 11m 29d
                     }
                 });
                 return { preg, lact, c0_6m, c6m_3y, c3y_6y, c0_6y_total };
@@ -996,12 +1003,33 @@
                                     {filteredAndSortedChildren.map(m => {
                                         if(!m) return null;
                                         const displayAge = m.age ? (String(m.age).includes('-') ? `${String(m.age).split('-')[0]}Y - ${String(m.age).split('-')[1]}M` : m.age) : '00Y - 00M';
+                                        
+                                        // Find Father and Mother Names
+                                        const head = (members || []).find(x => x && x.id === (m.isFamilyHead ? m.id : m.headId));
+                                        let fatherName = 'N/A';
+                                        let motherName = 'N/A';
+                                        
+                                        if (head) {
+                                            if (head.gender === 'Male') {
+                                                fatherName = `${head.firstName} ${head.lastName}`;
+                                                const wife = (members || []).find(x => x && x.headId === head.id && x.relationToHead === 'Wife');
+                                                if (wife) motherName = `${wife.firstName} ${wife.lastName}`;
+                                            } else if (head.gender === 'Female') {
+                                                motherName = `${head.firstName} ${head.lastName}`;
+                                                fatherName = 'N/A';
+                                            }
+                                        }
+
                                         return (
                                             <div key={m.id} className="bg-white border-[2.5px] border-[#f5c2c7] rounded-[32px] p-4 flex items-center gap-4 shadow-sm relative animate-view">
-                                                <div className="w-[85px] h-[85px] rounded-[24px] bg-[#f8f9fa] overflow-hidden shrink-0 border-[1.5px] border-slate-100 flex items-center justify-center p-1">
+                                                
+                                                {/* LEFT: AVATAR (Image Zoom Click) */}
+                                                <div onClick={() => setZoomImage(m.photoURL || "https://cdn-icons-png.flaticon.com/512/3063/3063822.png")} className="w-[85px] h-[85px] rounded-[24px] bg-[#f8f9fa] overflow-hidden shrink-0 border-[1.5px] border-slate-100 flex items-center justify-center p-1 cursor-pointer active:scale-95 transition-transform z-10">
                                                     <img src={m.photoURL || "https://cdn-icons-png.flaticon.com/512/3063/3063822.png"} alt="icon" className="w-full h-full object-cover rounded-[18px]" />
                                                 </div>
-                                                <div className="flex-1 flex flex-col justify-center min-w-0">
+                                                
+                                                {/* MIDDLE: BODY (Go to Household Click) */}
+                                                <div onClick={() => { if(head) { setViewingHead(head); setView('household'); } }} className="flex-1 flex flex-col justify-center min-w-0 cursor-pointer active:opacity-60 transition-opacity">
                                                     <div className="flex gap-1.5 mb-2">
                                                         <span className="bg-[#e4e8fc] text-[#6d79c6] text-[10px] font-black px-2 py-0.5 rounded uppercase leading-tight">ID: {m.poribarNo || '1'}</span>
                                                         <span className="bg-[#fce4e8] text-[#c75e71] text-[10px] font-black px-2 py-0.5 rounded uppercase italic leading-tight">{m.gender}</span>
@@ -1009,14 +1037,16 @@
                                                     </div>
                                                     <h4 className="font-black text-[#222222] text-[18px] uppercase leading-none mb-3 truncate">{m.firstName} {m.lastName}</h4>
                                                     <div className="flex gap-2">
-                                                        <span className="border-[1.5px] border-slate-200 text-slate-400 text-[9px] font-black px-3 py-1 rounded-full uppercase leading-none">FATHER NAME</span>
-                                                        <span className="border-[1.5px] border-slate-200 text-slate-400 text-[9px] font-black px-3 py-1 rounded-full uppercase leading-none">MOTHER NAME</span>
+                                                        <span className="border-[1.5px] border-slate-200 text-slate-400 text-[9px] font-black px-3 py-1 rounded-full uppercase leading-none truncate max-w-[50%]">F: {fatherName}</span>
+                                                        <span className="border-[1.5px] border-slate-200 text-slate-400 text-[9px] font-black px-3 py-1 rounded-full uppercase leading-none truncate max-w-[50%]">M: {motherName}</span>
                                                     </div>
                                                 </div>
+
+                                                {/* RIGHT: CALL BUTTON */}
                                                 {m.mobile ? (
-                                                    <a href={`tel:${m.mobile}`} className="w-[50px] h-[50px] bg-[#0bb37a] text-white rounded-[16px] flex items-center justify-center shrink-0 shadow-md active:scale-90 transition-transform"><Icons.Phone s={24} /></a>
+                                                    <a href={`tel:${m.mobile}`} onClick={(e) => e.stopPropagation()} className="w-[50px] h-[50px] bg-[#0bb37a] text-white rounded-[16px] flex items-center justify-center shrink-0 shadow-md active:scale-90 transition-transform z-10"><Icons.Phone s={24} /></a>
                                                 ) : (
-                                                    <div className="w-[50px] h-[50px] bg-slate-200 text-slate-400 rounded-[16px] flex items-center justify-center shrink-0 shadow-sm cursor-not-allowed"><Icons.Phone s={24} /></div>
+                                                    <div className="w-[50px] h-[50px] bg-slate-200 text-slate-400 rounded-[16px] flex items-center justify-center shrink-0 shadow-sm cursor-not-allowed z-10"><Icons.Phone s={24} /></div>
                                                 )}
                                             </div>
                                         );
@@ -1363,6 +1393,17 @@
                             </div>
                         </div>
                     )}
+
+                    {/* ==================== BENEFICIARIES FULL SCREEN IMAGE ZOOM POP-UP ==================== */}
+                    {zoomImage && (
+                        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 px-6 backdrop-blur-sm animate-view" onClick={() => setZoomImage(null)}>
+                            <img src={zoomImage} onClick={(e) => e.stopPropagation()} className="w-full max-w-sm rounded-[32px] object-cover border-[4px] border-white shadow-2xl animate-pop" />
+                            <button onClick={() => setZoomImage(null)} className="absolute top-6 right-6 bg-white/20 text-white w-12 h-12 rounded-full flex items-center justify-center text-2xl shadow-lg border border-white/40 active:scale-90 transition-transform">
+                                ✕
+                            </button>
+                        </div>
+                    )}
+
                 </div>
             );
         };
