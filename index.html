@@ -90,16 +90,6 @@
             </div>
         );
 
-        const AgeStatCard = ({ label, m, f, bg }) => (
-            <div className={`${bg} border-[2.5px] border-[#222222] rounded-[32px] p-2 py-3 flex flex-col items-center justify-center gap-1.5 shadow-md`}>
-                <div className="border border-white/70 text-white font-bold text-[11px] px-4 py-0.5 rounded-full whitespace-nowrap">{label}</div>
-                <div className="flex gap-2">
-                    <div className="border border-white/70 text-white font-bold text-[11px] px-3 py-0.5 rounded-full">M : {m}</div>
-                    <div className="border border-white/70 text-white font-bold text-[11px] px-3 py-0.5 rounded-full">F : {f}</div>
-                </div>
-            </div>
-        );
-
         const safeLocalStorage = {
             getItem: (key) => { try { return localStorage.getItem(key); } catch (e) { return null; } },
             setItem: (key, value) => { try { localStorage.setItem(key, value); } catch (e) { } },
@@ -127,6 +117,9 @@
 
         const appId = "poshan-pro-restore-v1";
 
+        // ============================================================================
+        // MAIN APP COMPONENT
+        // ============================================================================
         const App = () => {
             const [view, setView] = useState('login'); 
             const [user, setUser] = useState(null);
@@ -240,7 +233,6 @@
                     const months = calculateAgeInMonths(m.birthDate);
                     return months >= appliedDeskMin && months <= appliedDeskMax;
                 }).sort((a, b) => {
-                    // Sorting by ID or Name just for order
                     return String(a.poribarNo).localeCompare(String(b.poribarNo));
                 });
             }, [members, appliedDeskMin, appliedDeskMax]);
@@ -451,7 +443,6 @@
             const skipLogin = () => { safeLocalStorage.setItem('poshan_is_guest', 'true'); setIsGuest(true); setView('dashboard'); };
             const handleLogout = () => { if (confirm("Logout?")) { if (auth) auth.signOut().catch(e => {}); safeLocalStorage.removeItem('poshan_is_guest'); setIsGuest(false); setUser(null); setView('login'); } };
 
-            // Dashboard Stats Array - Mapped 4 Cards only
             const stats = useMemo(() => [
                 { l: 'FAMILIES', v: members.filter(x => x.isFamilyHead).length, bgLeft: 'bg-[#faa000]', bgRight: 'bg-[#f4b938]', img: 'assets/p.png' },
                 { l: 'MEMBERS', v: members.length, bgLeft: 'bg-[#cbdcf6]', bgRight: 'bg-[#dbe5f7]', img: 'assets/fa.png' },
@@ -517,55 +508,61 @@
 
             const filteredHeads = members.filter(m => m.isFamilyHead).filter(h => `${h.firstName} ${h.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) || h.poribarNo?.includes(searchTerm));
 
-            if (view === 'login') return (
-                <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 animate-view">
-                    <div className="w-full max-w-sm bg-white p-8 rounded-[48px] shadow-2xl text-center space-y-6 border-b-8 border-indigo-100 leading-none">
-                        <div className="mx-auto w-16 h-16 bg-[#ac5ebd] text-white rounded-[22px] flex items-center justify-center shadow-xl rotate-3 text-2xl font-black italic">P</div>
-                        <div>
-                            <h2 className="text-2xl font-black italic tracking-tighter text-[#ac5ebd] uppercase">Poshan Pro</h2>
-                            <p className="text-slate-400 text-[10px] font-bold uppercase mt-1 tracking-widest leading-none">Family Registry</p>
-                        </div>
-                        <div className="flex bg-slate-100 p-1 rounded-2xl gap-1 text-[10px] font-bold">
-                            <button onClick={() => setLoginTab('userpass')} className={`flex-1 py-3 rounded-xl uppercase transition-all ${loginTab === 'userpass' ? 'bg-[#ac5ebd] text-white shadow-md' : 'text-slate-500'}`}>User/Pass</button>
-                            <button onClick={() => setLoginTab('otp')} className={`flex-1 py-3 rounded-xl uppercase transition-all ${loginTab === 'otp' ? 'bg-[#ac5ebd] text-white shadow-md' : 'text-slate-500'}`}>OTP</button>
-                            <button onClick={() => setLoginTab('google')} className={`flex-1 py-3 rounded-xl uppercase transition-all ${loginTab === 'google' ? 'bg-[#ac5ebd] text-white shadow-md' : 'text-slate-500'}`}>Google</button>
-                        </div>
-                        <div className="space-y-4">
-                            {loginTab === 'userpass' && (
-                                <form onSubmit={handleUserPassAuth} className="space-y-3">
-                                    <input type="text" placeholder="Username" className="w-full p-4 border-2 border-slate-100 rounded-2xl font-bold outline-none text-sm" value={username} onChange={e => setUsername(e.target.value)} required />
-                                    <input type="password" placeholder="Password (Min 6)" className="w-full p-4 border-2 border-slate-100 rounded-2xl font-bold outline-none text-sm" value={password} onChange={e => setPassword(e.target.value)} required />
-                                    <button type="submit" className="w-full py-4 bg-[#ac5ebd] text-white rounded-2xl font-black uppercase text-xs tracking-wider shadow-md">{isBtnLoading ? "Processing..." : (isSignUp ? "Sign Up" : "Login Now")}</button>
-                                    <button type="button" onClick={() => setIsSignUp(!isSignUp)} className="text-[10px] font-bold text-[#ac5ebd] underline block mx-auto mt-2">{isSignUp ? "Have account? Log In" : "New user? Sign Up"}</button>
-                                </form>
-                            )}
-                            {loginTab === 'otp' && (
-                                <div className="space-y-3">
-                                    {!otpSent ? (
-                                        <div className="space-y-3">
-                                            <div className="relative">
-                                                <div className="absolute left-5 top-1/2 -translate-y-1/2 font-bold text-slate-400 border-r pr-3">+91</div>
-                                                <input placeholder="Mobile Number" className="w-full p-4 pl-16 border-2 border-slate-100 rounded-2xl font-bold outline-none text-sm" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0,10))} inputMode="tel" />
+            // ==========================================
+            // RENDER BLOCKS
+            // ==========================================
+
+            if (view === 'login') {
+                return (
+                    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 animate-view">
+                        <div className="w-full max-w-sm bg-white p-8 rounded-[48px] shadow-2xl text-center space-y-6 border-b-8 border-indigo-100 leading-none">
+                            <div className="mx-auto w-16 h-16 bg-[#ac5ebd] text-white rounded-[22px] flex items-center justify-center shadow-xl rotate-3 text-2xl font-black italic">P</div>
+                            <div>
+                                <h2 className="text-2xl font-black italic tracking-tighter text-[#ac5ebd] uppercase">Poshan Pro</h2>
+                                <p className="text-slate-400 text-[10px] font-bold uppercase mt-1 tracking-widest leading-none">Family Registry</p>
+                            </div>
+                            <div className="flex bg-slate-100 p-1 rounded-2xl gap-1 text-[10px] font-bold">
+                                <button onClick={() => setLoginTab('userpass')} className={`flex-1 py-3 rounded-xl uppercase transition-all ${loginTab === 'userpass' ? 'bg-[#ac5ebd] text-white shadow-md' : 'text-slate-500'}`}>User/Pass</button>
+                                <button onClick={() => setLoginTab('otp')} className={`flex-1 py-3 rounded-xl uppercase transition-all ${loginTab === 'otp' ? 'bg-[#ac5ebd] text-white shadow-md' : 'text-slate-500'}`}>OTP</button>
+                                <button onClick={() => setLoginTab('google')} className={`flex-1 py-3 rounded-xl uppercase transition-all ${loginTab === 'google' ? 'bg-[#ac5ebd] text-white shadow-md' : 'text-slate-500'}`}>Google</button>
+                            </div>
+                            <div className="space-y-4">
+                                {loginTab === 'userpass' && (
+                                    <form onSubmit={handleUserPassAuth} className="space-y-3">
+                                        <input type="text" placeholder="Username" className="w-full p-4 border-2 border-slate-100 rounded-2xl font-bold outline-none text-sm" value={username} onChange={e => setUsername(e.target.value)} required />
+                                        <input type="password" placeholder="Password (Min 6)" className="w-full p-4 border-2 border-slate-100 rounded-2xl font-bold outline-none text-sm" value={password} onChange={e => setPassword(e.target.value)} required />
+                                        <button type="submit" className="w-full py-4 bg-[#ac5ebd] text-white rounded-2xl font-black uppercase text-xs tracking-wider shadow-md">{isBtnLoading ? "Processing..." : (isSignUp ? "Sign Up" : "Login Now")}</button>
+                                        <button type="button" onClick={() => setIsSignUp(!isSignUp)} className="text-[10px] font-bold text-[#ac5ebd] underline block mx-auto mt-2">{isSignUp ? "Have account? Log In" : "New user? Sign Up"}</button>
+                                    </form>
+                                )}
+                                {loginTab === 'otp' && (
+                                    <div className="space-y-3">
+                                        {!otpSent ? (
+                                            <div className="space-y-3">
+                                                <div className="relative">
+                                                    <div className="absolute left-5 top-1/2 -translate-y-1/2 font-bold text-slate-400 border-r pr-3">+91</div>
+                                                    <input placeholder="Mobile Number" className="w-full p-4 pl-16 border-2 border-slate-100 rounded-2xl font-bold outline-none text-sm" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0,10))} inputMode="tel" />
+                                                </div>
+                                                <button onClick={sendOTP} className="w-full py-4 bg-[#ac5ebd] text-white rounded-2xl font-black uppercase text-xs tracking-wider shadow-md">Send OTP</button>
                                             </div>
-                                            <button onClick={sendOTP} className="w-full py-4 bg-[#ac5ebd] text-white rounded-2xl font-black uppercase text-xs tracking-wider shadow-md">Send OTP</button>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-3">
-                                            <input placeholder="6-digit OTP" className="w-full p-4 border-2 border-slate-100 rounded-2xl font-black text-center tracking-[0.5em] text-md outline-none" value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0,6))} inputMode="numeric" />
-                                            <button onClick={verifyOTP} className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black uppercase text-xs tracking-wider shadow-md">Verify Code</button>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                            {loginTab === 'google' && (
-                                <button onClick={handleGoogleLogin} className="w-full p-4 bg-white border-2 border-slate-100 rounded-2xl flex items-center justify-center gap-4 font-black uppercase text-xs hover:bg-slate-50"><Icons.Google /> Continue with Gmail</button>
-                            )}
-                            <div className="flex items-center gap-4 py-1"><div className="h-px flex-1 bg-slate-100"></div><span className="text-[10px] font-black text-slate-300 uppercase">OR</span><div className="h-px flex-1 bg-slate-100"></div></div>
-                            <button onClick={skipLogin} className="w-full p-2 text-[#8b5cf6] font-black uppercase text-[11px] tracking-[0.1em]">Skip Login &gt;</button>
+                                        ) : (
+                                            <div className="space-y-3">
+                                                <input placeholder="6-digit OTP" className="w-full p-4 border-2 border-slate-100 rounded-2xl font-black text-center tracking-[0.5em] text-md outline-none" value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0,6))} inputMode="numeric" />
+                                                <button onClick={verifyOTP} className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black uppercase text-xs tracking-wider shadow-md">Verify Code</button>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                                {loginTab === 'google' && (
+                                    <button onClick={handleGoogleLogin} className="w-full p-4 bg-white border-2 border-slate-100 rounded-2xl flex items-center justify-center gap-4 font-black uppercase text-xs hover:bg-slate-50"><Icons.Google /> Continue with Gmail</button>
+                                )}
+                                <div className="flex items-center gap-4 py-1"><div className="h-px flex-1 bg-slate-100"></div><span className="text-[10px] font-black text-slate-300 uppercase">OR</span><div className="h-px flex-1 bg-slate-100"></div></div>
+                                <button onClick={skipLogin} className="w-full p-2 text-[#8b5cf6] font-black uppercase text-[11px] tracking-[0.1em]">Skip Login &gt;</button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            );
+                );
+            }
 
             return (
                 <div className={`min-h-screen animate-view ${view === 'dashboard' ? 'bg-[#df5b86]' : (view === 'memberDataDesk' ? 'bg-[#fde1e9]' : 'bg-[#e52165]')}`}>
@@ -797,8 +794,12 @@
                         {view === 'beneficiaries' && (
                             <div className="min-h-screen bg-[#fde1e9] animate-view pb-20 -mt-6">
                                 <div className="bg-[#a65ebd] rounded-b-[32px] pt-12 pb-8 px-4 shadow-sm relative z-10 flex items-center justify-center">
-                                    <button onClick={() => setView('dashboard')} className="absolute left-4 border-[1.5px] border-white/60 p-2 rounded-[10px] text-white active:scale-75"><Icons.CurvedBack /></button>
-                                    <h1 className="text-white font-black italic text-[22px] tracking-wide mt-1">Beneficiaries Des</h1>
+                                    <button onClick={() => setView('dashboard')} className="absolute left-4 border-[1.5px] border-white/60 p-2 rounded-[10px] text-white active:scale-75 transition-transform bg-transparent">
+                                        <Icons.CurvedBack />
+                                    </button>
+                                    <h1 className="text-white font-black italic text-[22px] tracking-wide leading-none drop-shadow-sm text-center mt-1">
+                                        Beneficiaries Des
+                                    </h1>
                                 </div>
                                 <div className="p-4 mt-1">
                                     <div className="bg-[#d2bcc5] border-[2px] border-dashed border-[#dc8f9e] rounded-[36px] p-4 pb-6 shadow-sm">
@@ -874,12 +875,12 @@
                             <div className="min-h-screen bg-[#fde1e9] animate-view pb-20 -mt-6">
                                 <div className="bg-[#a65ebd] rounded-b-[24px] pt-8 pb-6 px-4 shadow-sm relative z-10">
                                     <div className="flex justify-between items-center mb-5">
-                                        <button onClick={() => setView('dashboard')} className="text-white border-[1.5px] border-white/60 p-1.5 rounded-[8px] active:scale-75"><Icons.CurvedBack /></button>
+                                        <button onClick={() => setView('dashboard')} className="text-white border-[1.5px] border-white/60 p-1.5 rounded-[8px] active:scale-75 transition-transform bg-white/5"><Icons.CurvedBack /></button>
                                         <div className="border-[1.5px] border-[#ccaad6] px-4 py-2 mx-3 flex-1 flex justify-center items-center"><h1 className="text-white font-black italic uppercase text-[15px] tracking-widest leading-none drop-shadow-sm mt-0.5">Head Management</h1></div>
-                                        <button onClick={() => setRefreshTick(t => t + 1)} className="border-[1.5px] border-[#ccaad6] p-1.5 rounded-[8px] text-white"><Icons.Refresh s={20} /></button>
+                                        <button onClick={() => setRefreshTick(t => t + 1)} className="border-[1.5px] border-[#ccaad6] p-1.5 rounded-[8px] text-white bg-white/5 active:bg-white/20 transition-colors"><Icons.Refresh s={20} /></button>
                                     </div>
                                     <div className="flex flex-col gap-2.5">
-                                        <button onClick={() => {setFormData({...initialForm, isFamilyHead: true, relationToHead: 'Self'}); setEditingId(null); setView('form');}} className="w-full border-[1.5px] border-white/70 text-white rounded-[10px] py-3 text-[12px] font-black uppercase tracking-wide flex items-center justify-center gap-2 bg-white/5 shadow-sm">New Head Registration <Icons.Plus s={18} /></button>
+                                        <button onClick={() => {setFormData({...initialForm, isFamilyHead: true, relationToHead: 'Self'}); setEditingId(null); setView('form');}} className="w-full border-[1.5px] border-white/70 text-white rounded-[10px] py-3 text-[12px] font-black uppercase tracking-wide flex items-center justify-center gap-2 bg-white/5 active:bg-white/20 transition-colors shadow-sm">New Head Registration <Icons.Plus s={18} /></button>
                                         <div className="flex gap-2">
                                             <button onClick={handleDownloadData} className="flex-1 bg-white text-[#a65ebd] border-[1.5px] border-white rounded-[10px] py-3 text-[11px] font-black uppercase tracking-wide flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform"><Icons.Download s={16} /> Get Data</button>
                                             <button onClick={() => fileInputRefExcel.current?.click()} className="flex-1 bg-[#a65ebd] text-white border-[1.5px] border-white/80 rounded-[10px] py-3 text-[11px] font-black uppercase tracking-wide flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform">{isUploadingExcel ? "Syncing..." : <><Icons.Excel s={16} /> Upload Excel</>}</button>
@@ -910,12 +911,19 @@
                                 <div className="bg-[#a65ebd] rounded-b-[24px] pt-8 pb-8 px-4 shadow-sm relative z-10">
                                     <div className="flex justify-between items-center">
                                         <button onClick={() => setView(formData.isFamilyHead ? 'addHeadDashboard' : 'household')} className="border-[1.5px] border-white/60 p-2 rounded-[10px] text-white active:scale-75 transition-transform bg-transparent"><Icons.CurvedBack /></button>
-                                        <h1 className="text-white font-black italic uppercase text-[17px] tracking-wider text-center flex-1">Registration Form</h1>
+                                        <h1 className="text-white font-black italic uppercase text-[17px] tracking-wider leading-none text-center flex-1 drop-shadow-sm">Registration Form</h1>
+                                        <button onClick={() => setRefreshTick(t => t + 1)} className="border-[1.5px] border-white/60 p-2 rounded-[10px] text-white active:bg-white/20 transition-colors bg-transparent"><Icons.Refresh s={20} /></button>
                                     </div>
                                 </div>
                                 <div className="p-5 space-y-6">
                                     <div className="flex items-center gap-4">
-                                        <div onClick={() => fileInputRef.current?.click()} className="w-[125px] h-[125px] bg-white border-[3px] border-[#ef5f8b] rounded-[20px] shadow-sm flex items-center justify-center overflow-hidden"><Icons.FormImagePlaceholder /></div>
+                                        <div onClick={() => fileInputRef.current?.click()} className="w-[125px] h-[125px] bg-white border-[3px] border-[#ef5f8b] rounded-[20px] shadow-sm flex items-center justify-center overflow-hidden relative active:scale-95 transition-transform shrink-0">
+                                            {formData.photoURL ? <img src={formData.photoURL} className="w-full h-full object-cover" /> : <Icons.FormImagePlaceholder />}
+                                            <input type="file" ref={fileInputRef} onChange={(e) => {
+                                                const f = e.target.files[0]; if(!f) return;
+                                                const r = new FileReader(); r.onload = (ev) => setFormData({...formData, photoURL: ev.target.result}); r.readAsDataURL(f);
+                                            }} className="hidden" accept="image/*" />
+                                        </div>
                                         <div className="flex-1 space-y-1.5"><label className="text-[12px] font-black text-[#ef5f8b] uppercase tracking-wide block mb-1">FAMILY ID*</label><input placeholder="FAMILY CODE" className="w-full py-4 px-5 border-[1.5px] border-[#94a3b8] rounded-[18px] font-bold text-slate-700 outline-none shadow-sm uppercase placeholder-slate-400 bg-white" value={formData.poribarNo} onChange={e => setFormData({...formData, poribarNo: e.target.value.replace(/\D/g, '')})} inputMode="numeric" disabled={!formData.isFamilyHead} /></div>
                                     </div>
                                     <div className="bg-white p-5 rounded-[28px] border-[2.5px] border-[#ef5f8b] shadow-sm space-y-5">
